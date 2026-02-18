@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Литвин. Путь к хайпу</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Литвин. Путь к хайпу</h1>
+
+<div class="board">
+
+<img src="board.jpg">
+
+<div class="token red" id="p0"></div>
+<div class="token green" id="p1"></div>
+<div class="token yellow" id="p2"></div>
+<div class="token blue" id="p3"></div>
+<div class="token pink" id="p4"></div>
+<div class="token orange" id="p5"></div>
+
+</div>
+
+<button onclick="rollDice()">🎲 Бросить кубик</button>
+
+<div id="info"></div>
+
+<audio id="diceSound" src="dice.mp3"></audio>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="client.js"></script>
+
+</body>
+</html>
