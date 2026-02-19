@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Литвин. Путь к хайпу</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="start">
+  <h1>🔥 Литвин. Путь к хайпу 🔥</h1>
+
+  <input id="name" placeholder="Имя">
+  <input id="room" placeholder="Код комнаты">
+
+  <div class="token-select">
+    <p>Выбери фишку:</p>
+    <div class="token-choice" data-color="red" style="background:red"></div>
+    <div class="token-choice" data-color="blue" style="background:blue"></div>
+    <div class="token-choice" data-color="green" style="background:green"></div>
+    <div class="token-choice" data-color="gold" style="background:gold"></div>
+  </div>
+
+  <button onclick="enter()">Играть</button>
+</div>
+
+<div id="game" style="display:none;">
+  <div id="board">
+    <img src="board.jpg" class="board-img">
+  </div>
+
+  <div class="panel">
+    <div id="dice" onclick="roll()">🎲</div>
+    <div id="diceResult"></div>
+    <div id="info"></div>
+  </div>
+</div>
+
+<div id="popup"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="game.js"></script>
+
+</body>
+</html>
