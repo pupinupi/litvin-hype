@@ -1,81 +1,113 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>Литвин. Путь к хайпу</title>
-
 <link rel="stylesheet" href="style.css">
-
-<script src="/socket.io/socket.io.js"></script>
-<script defer src="client.js"></script>
-
 </head>
 <body>
 
-<div id="menu">
+<div id="start">
+  <h2>Литвин. Путь к хайпу</h2>
+  <input id="name" placeholder="Имя"><br>
+  <input id="room" placeholder="Код комнаты"><br>
 
-<h1>Литвин. Путь к хайпу</h1>
+  <div>
+    <div class="choice" data-color="red" style="background:red"></div>
+    <div class="choice" data-color="blue" style="background:blue"></div>
+    <div class="choice" data-color="green" style="background:green"></div>
+    <div class="choice" data-color="yellow" style="background:yellow"></div>
+  </div>
 
-<input id="name" placeholder="Имя">
-
-<select id="color">
-<option value="red">Красный</option>
-<option value="blue">Синий</option>
-<option value="green">Зелёный</option>
-<option value="yellow">Жёлтый</option>
-<option value="purple">Фиолетовый</option>
-<option value="cyan">Голубой</option>
-</select>
-
-<br><br>
-
-<button onclick="createRoom()">Создать комнату</button>
-
-<br><br>
-
-<input id="roomInput" placeholder="Код комнаты">
-
-<button onclick="joinRoom()">Войти</button>
-
-<p id="roomCode"></p>
-
+  <button onclick="enter()">Войти</button>
 </div>
 
 <div id="game" style="display:none">
-
-<div id="boardContainer">
-
-<img src="board.jpg" id="board">
-
-<div id="tokens"></div>
-
+  <div id="board">
+    <img src="board.jpg" class="board-img">
+  </div>
+  <div id="dice">🎲</div>
+  <div id="info"></div>
 </div>
 
-<div id="ui">
+<div id="popup"></div>
 
-<div id="dice3d">
-<div class="cube" id="cube">
-<div class="face front">1</div>
-<div class="face back">6</div>
-<div class="face right">3</div>
-<div class="face left">4</div>
-<div class="face top">5</div>
-<div class="face bottom">2</div>
-</div>
-</div>
+<script src="/socket.io/socket.io.js"></script>
 
-<button onclick="rollDice()">Бросить кубик</button>
+<script>
+const socket = io();
+let room="";
+let color=null;
+let positions=[];
 
-<p id="status"></p>
+const board=document.getElementById("board");
 
-</div>
+function buildPositions(){
+  const size=board.offsetWidth;
+  const m=size*0.08;
+  const s=(size-m*2)/4;
+  positions=[];
+  for(let i=0;i<5;i++)
+    positions.push({x:m,y:size-m-i*s});
+  for(let i=1;i<5;i++)
+    positions.push({x:m+i*s,y:m});
+  for(let i=4;i>=0;i--)
+    positions.push({x:size-m,y:m+(4-i)*s});
+  for(let i=4;i>0;i--)
+    positions.push({x:m+(i-1)*s,y:size-m});
+}
 
-</div>
+window.onload=buildPositions;
+window.onresize=buildPositions;
 
-<div id="cardPopup" style="display:none">
-<div id="cardText"></div>
-<button onclick="closeCard()">OK</button>
-</div>
+document.querySelectorAll(".choice").forEach(el=>{
+  el.onclick=()=>{
+    document.querySelectorAll(".choice")
+      .forEach(c=>c.style.outline="none");
+    el.style.outline="3px solid white";
+    color=el.dataset.color;
+  };
+});
+
+function enter(){
+  const name=document.getElementById("name").value;
+  room=document.getElementById("room").value;
+  if(!name||!room||!color) return alert("Заполните всё");
+  socket.emit("joinRoom",{name,room,color});
+  document.getElementById("start").style.display="none";
+  document.getElementById("game").style.display="block";
+}
+
+document.getElementById("dice").onclick=()=>{
+  socket.emit("rollDice",room);
+};
+
+socket.on("dice",d=>{
+  document.getElementById("dice").innerText=d;
+});
+
+socket.on("update",data=>{
+  document.querySelectorAll(".token").forEach(t=>t.remove());
+  data.players.forEach((p,i)=>{
+    if(!positions[p.position]) return;
+    const t=document.createElement("div");
+    t.className="token";
+    t.style.background=p.color;
+    t.style.left=positions[p.position].x+"px";
+    t.style.top=positions[p.position].y+"px";
+    board.appendChild(t);
+  });
+  document.getElementById("info").innerHTML=
+    data.players.map(p=>p.name+": "+p.hype+" хайпа").join("<br>");
+});
+
+socket.on("scandal",txt=>{
+  const p=document.getElementById("popup");
+  p.innerText="СКАНДАЛ: "+txt;
+  p.style.display="block";
+  setTimeout(()=>p.style.display="none",2000);
+});
+</script>
 
 </body>
 </html>
