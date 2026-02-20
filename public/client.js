@@ -1,111 +1,234 @@
+// подключение к серверу
 const socket = io();
 
+// элементы
+const loginScreen = document.getElementById("loginScreen");
+const gameScreen = document.getElementById("gameScreen");
+
+const nameInput = document.getElementById("nameInput");
+const roomInput = document.getElementById("roomInput");
+const colorInput = document.getElementById("colorInput");
+
+const joinBtn = document.getElementById("joinBtn");
+const rollBtn = document.getElementById("rollBtn");
+
+const board = document.getElementById("board");
+const dice = document.getElementById("dice");
+const playersList = document.getElementById("playersList");
+const hypeList = document.getElementById("hypeList");
+const messageBox = document.getElementById("message");
+
 let myId = null;
-
-const cells = [
-{ x:70,y:720 },
-{ x:70,y:630 },
-{ x:70,y:540 },
-{ x:70,y:450 },
-{ x:70,y:360 },
-
-{ x:70,y:270 },
-{ x:70,y:180 },
-{ x:70,y:90 },
-
-{ x:160,y:90 },
-{ x:250,y:90 },
-{ x:340,y:90 },
-{ x:430,y:90 },
-{ x:520,y:90 },
-
-{ x:610,y:90 },
-
-{ x:610,y:180 },
-{ x:610,y:270 },
-{ x:610,y:360 },
-{ x:610,y:450 },
-{ x:610,y:540 },
-{ x:610,y:630 }
-];
+let myTurn = false;
+let players = {};
+let cells = [];
 
 
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+// координаты клеток (по твоему полю)
+function initCells() {
 
+    const rect = board.getBoundingClientRect();
 
-function join(){
+    const w = rect.width;
+    const h = rect.height;
 
- const name = document.getElementById("name").value;
- const room = document.getElementById("room").value;
- const color = document.getElementById("color").value;
+    const margin = 60;
 
- if(!name || !room){
+    cells = [
 
-  alert("Введите имя и комнату");
+        {x: margin, y: h - margin}, // старт
 
-  return;
- }
+        {x: margin, y: h*0.75},
+        {x: margin, y: h*0.55},
+        {x: margin, y: h*0.35},
+        {x: margin, y: h*0.15},
 
- socket.emit("join", room, name, color);
+        {x: w*0.25, y: margin},
+        {x: w*0.45, y: margin},
+        {x: w*0.65, y: margin},
+        {x: w*0.85, y: margin},
 
- document.getElementById("menu").style.display="none";
- document.getElementById("game").style.display="block";
+        {x: w - margin, y: h*0.25},
+        {x: w - margin, y: h*0.45},
+        {x: w - margin, y: h*0.65},
+        {x: w - margin, y: h*0.85},
+
+        {x: w*0.75, y: h - margin},
+        {x: w*0.55, y: h - margin},
+        {x: w*0.35, y: h - margin},
+        {x: w*0.15, y: h - margin},
+
+        {x: w*0.25, y: h*0.85},
+        {x: w*0.45, y: h*0.85},
+        {x: w*0.65, y: h*0.85},
+
+    ];
 }
 
 
-function roll(){
+// вход
+joinBtn.onclick = () => {
 
- socket.emit("roll");
+    const name = nameInput.value.trim();
+    const room = roomInput.value.trim();
+    const color = colorInput.value;
+
+    if (!name || !room) {
+        alert("Введите имя и комнату");
+        return;
+    }
+
+    socket.emit("join", { name, room, color });
+};
+
+
+// успешный вход
+socket.on("joined", (data) => {
+
+    myId = data.id;
+
+    loginScreen.style.display = "none";
+    gameScreen.style.display = "block";
+
+    setTimeout(initCells, 300);
+});
+
+
+// обновление игроков
+socket.on("state", (data) => {
+
+    players = data.players;
+    updatePlayers();
+    updateHype();
+    drawPlayers();
+});
+
+
+// ход
+socket.on("yourTurn", () => {
+
+    myTurn = true;
+    messageBox.innerText = "Твой ход";
+});
+
+
+// сообщение
+socket.on("message", (text) => {
+
+    messageBox.innerText = text;
+});
+
+
+// победа
+socket.on("win", (name) => {
+
+    alert("Победил: " + name);
+});
+
+
+// бросок кубика
+rollBtn.onclick = () => {
+
+    if (!myTurn) return;
+
+    dice.classList.add("roll");
+
+    setTimeout(() => {
+
+        socket.emit("roll");
+
+    }, 500);
+
+    setTimeout(() => {
+
+        dice.classList.remove("roll");
+
+    }, 800);
+};
+
+
+// показать значение кубика
+socket.on("dice", (value) => {
+
+    dice.innerText = value;
+    myTurn = false;
+});
+
+
+// обновить список игроков
+function updatePlayers() {
+
+    playersList.innerHTML = "";
+
+    for (let id in players) {
+
+        const p = players[id];
+
+        const div = document.createElement("div");
+
+        div.innerHTML =
+            `<span style="color:${p.color}">⬤</span> ${p.name}`;
+
+        playersList.appendChild(div);
+    }
 }
 
 
-socket.on("dice", number=>{
+// обновить хайп
+function updateHype() {
 
- document.getElementById("dice").innerHTML =
- "🎲 Выпало: " + number;
+    hypeList.innerHTML = "";
 
-});
+    for (let id in players) {
 
+        const p = players[id];
 
-socket.on("event", text=>{
+        const div = document.createElement("div");
 
- document.getElementById("info").innerHTML =
- text;
+        div.innerHTML =
+            `<span style="color:${p.color}">⬤</span> ${p.name}: ${p.hype}`;
 
-});
-
-
-socket.on("scandal", text=>{
-
- alert("СКАНДАЛ: " + text);
-
-});
+        hypeList.appendChild(div);
+    }
+}
 
 
-socket.on("state", data=>{
+// нарисовать фишки
+function drawPlayers() {
 
- ctx.clearRect(0,0,800,800);
+    document.querySelectorAll(".token").forEach(e => e.remove());
 
- data.players.forEach(p=>{
+    let offset = {};
 
-  if(p.id===socket.id)
-   myId=p.id;
+    for (let id in players) {
 
-  const cell = cells[p.pos];
+        const p = players[id];
 
-  ctx.beginPath();
+        const pos = cells[p.position];
 
-  ctx.arc(cell.x,cell.y,15,0,Math.PI*2);
+        if (!pos) continue;
 
-  ctx.fillStyle=p.color;
+        if (!offset[p.position]) offset[p.position] = 0;
 
-  ctx.fill();
+        const token = document.createElement("div");
 
-  ctx.fillStyle="white";
+        token.className = "token";
 
-  ctx.fillText(p.name[0],cell.x-4,cell.y+4);
+        token.style.background = p.color;
 
- });
+        token.style.left = pos.x + offset[p.position] + "px";
+        token.style.top = pos.y + offset[p.position] + "px";
 
-});
+        offset[p.position] += 12;
+
+        board.appendChild(token);
+    }
+}
+
+
+// адаптация при изменении размера
+window.onresize = () => {
+
+    initCells();
+    drawPlayers();
+};
