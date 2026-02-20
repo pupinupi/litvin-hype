@@ -1,0 +1,43 @@
+<!-- ===== СТАРТОВЫЙ ЭКРАН ===== -->
+<div id="start">
+
+  <h1>Литвин. Путь к хайпу</h1>
+
+  <input type="text" id="name" placeholder="Введите имя" />
+  <br>
+  <input type="text" id="room" placeholder="Код комнаты" />
+  <br>
+
+  <h3>Выберите фишку</h3>
+
+  <div id="choices">
+    <div class="choice" data-color="red" style="background:red;"></div>
+    <div class="choice" data-color="blue" style="background:blue;"></div>
+    <div class="choice" data-color="green" style="background:green;"></div>
+    <div class="choice" data-color="yellow" style="background:yellow;"></div>
+    <div class="choice" data-color="purple" style="background:purple;"></div>
+    <div class="choice" data-color="orange" style="background:orange;"></div>
+  </div>
+
+  <br>
+  <button onclick="enter()">Войти в игру</button>
+
+</div>
+
+
+<!-- ===== ИГРА ===== -->
+<div id="game" style="display:none;">
+
+  <div id="board">
+    <img src="board.jpg" class="board-img" />
+  </div>
+
+  <button onclick="roll()">Бросить кубик</button>
+
+  <div id="info"></div>
+
+</div>
+
+
+<!-- ===== ПОПАП СКАНДАЛ ===== -->
+<div id="popup"></div>
