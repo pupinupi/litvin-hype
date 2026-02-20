@@ -1,39 +1,37 @@
 const socket = io();
 
-const boardSize = 1024;
+/*
+Координаты в процентах от изображения
+0% = левый край
+100% = правый край
+*/
 
-// ТОЧНЫЕ координаты 20 клеток для поля 1024×1024
 const cells = [
 
-/* 1 старт (низ слева) */
-{ x: 90, y: 930 },
+{ x: 8, y: 92 },  // старт
 
-/* вверх */
-{ x: 90, y: 820 },
-{ x: 90, y: 710 },
-{ x: 90, y: 600 },
-{ x: 90, y: 490 },
-{ x: 90, y: 380 },
-{ x: 90, y: 270 },
+{ x: 8, y: 80 },
+{ x: 8, y: 68 },
+{ x: 8, y: 56 },
+{ x: 8, y: 44 },
+{ x: 8, y: 32 },
+{ x: 8, y: 20 },
 
-/* верх вправо */
-{ x: 250, y: 120 },
-{ x: 400, y: 120 },
-{ x: 550, y: 120 },
-{ x: 700, y: 120 },
+{ x: 22, y: 10 },
+{ x: 36, y: 10 },
+{ x: 50, y: 10 },
+{ x: 64, y: 10 },
 
-/* вправо вниз */
-{ x: 880, y: 270 },
-{ x: 880, y: 380 },
-{ x: 880, y: 490 },
-{ x: 880, y: 600 },
-{ x: 880, y: 710 },
+{ x: 88, y: 20 },
+{ x: 88, y: 32 },
+{ x: 88, y: 44 },
+{ x: 88, y: 56 },
+{ x: 88, y: 68 },
 
-/* низ влево */
-{ x: 700, y: 930 },
-{ x: 550, y: 930 },
-{ x: 400, y: 930 },
-{ x: 250, y: 930 }
+{ x: 64, y: 92 },
+{ x: 50, y: 92 },
+{ x: 36, y: 92 },
+{ x: 22, y: 92 }
 
 ];
 
@@ -92,7 +90,7 @@ const cube = document.getElementById("cube");
 
 const rotations = {
 
-1:"rotateX(0deg) rotateY(0deg)",
+1:"rotateX(0deg)",
 2:"rotateX(-90deg)",
 3:"rotateY(90deg)",
 4:"rotateY(-90deg)",
@@ -118,7 +116,7 @@ const container = document.getElementById("tokens");
 
 container.innerHTML="";
 
-let index=0;
+let offset = 0;
 
 Object.values(players).forEach(p=>{
 
@@ -130,12 +128,12 @@ el.className="token";
 
 el.style.background=p.color;
 
-el.style.left=(pos.x + index*8)+"px";
-el.style.top=(pos.y + index*8)+"px";
+el.style.left = (pos.x + offset) + "%";
+el.style.top = (pos.y + offset) + "%";
 
 container.appendChild(el);
 
-index++;
+offset += 1.5;
 
 });
 
