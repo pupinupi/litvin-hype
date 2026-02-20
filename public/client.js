@@ -1,234 +1,157 @@
-// подключение к серверу
 const socket = io();
 
-// элементы
-const loginScreen = document.getElementById("loginScreen");
-const gameScreen = document.getElementById("gameScreen");
+let myId;
 
-const nameInput = document.getElementById("nameInput");
-const roomInput = document.getElementById("roomInput");
-const colorInput = document.getElementById("colorInput");
+const cells = [
 
-const joinBtn = document.getElementById("joinBtn");
-const rollBtn = document.getElementById("rollBtn");
+{ x:50,y:520 },
+{ x:50,y:450 },
+{ x:50,y:380 },
+{ x:50,y:310 },
+{ x:50,y:240 },
 
-const board = document.getElementById("board");
-const dice = document.getElementById("dice");
-const playersList = document.getElementById("playersList");
-const hypeList = document.getElementById("hypeList");
-const messageBox = document.getElementById("message");
+{ x:50,y:170 },
+{ x:50,y:100 },
 
-let myId = null;
-let myTurn = false;
-let players = {};
-let cells = [];
+{ x:150,y:100 },
+{ x:250,y:100 },
+{ x:350,y:100 },
+{ x:450,y:100 },
 
+{ x:550,y:100 },
+{ x:550,y:170 },
+{ x:550,y:240 },
+{ x:550,y:310 },
 
-// координаты клеток (по твоему полю)
-function initCells() {
+{ x:550,y:380 },
+{ x:550,y:450 },
 
-    const rect = board.getBoundingClientRect();
+{ x:450,y:520 },
+{ x:350,y:520 },
+{ x:250,y:520 }
 
-    const w = rect.width;
-    const h = rect.height;
+];
 
-    const margin = 60;
+function createRoom(){
 
-    cells = [
+const name = document.getElementById("name").value;
+const color = document.getElementById("color").value;
 
-        {x: margin, y: h - margin}, // старт
+socket.emit("createRoom",{name,color});
 
-        {x: margin, y: h*0.75},
-        {x: margin, y: h*0.55},
-        {x: margin, y: h*0.35},
-        {x: margin, y: h*0.15},
-
-        {x: w*0.25, y: margin},
-        {x: w*0.45, y: margin},
-        {x: w*0.65, y: margin},
-        {x: w*0.85, y: margin},
-
-        {x: w - margin, y: h*0.25},
-        {x: w - margin, y: h*0.45},
-        {x: w - margin, y: h*0.65},
-        {x: w - margin, y: h*0.85},
-
-        {x: w*0.75, y: h - margin},
-        {x: w*0.55, y: h - margin},
-        {x: w*0.35, y: h - margin},
-        {x: w*0.15, y: h - margin},
-
-        {x: w*0.25, y: h*0.85},
-        {x: w*0.45, y: h*0.85},
-        {x: w*0.65, y: h*0.85},
-
-    ];
 }
 
+function joinRoom(){
 
-// вход
-joinBtn.onclick = () => {
+const room = document.getElementById("roomInput").value;
+const name = document.getElementById("name").value;
+const color = document.getElementById("color").value;
 
-    const name = nameInput.value.trim();
-    const room = roomInput.value.trim();
-    const color = colorInput.value;
+socket.emit("joinRoom",{room,name,color});
 
-    if (!name || !room) {
-        alert("Введите имя и комнату");
-        return;
-    }
+startGame();
 
-    socket.emit("join", { name, room, color });
+}
+
+socket.on("roomCreated", room => {
+
+document.getElementById("roomCode").innerText =
+"Код комнаты: "+room;
+
+startGame();
+
+});
+
+function startGame(){
+
+document.getElementById("menu").style.display="none";
+document.getElementById("game").style.display="block";
+
+}
+
+function rollDice(){
+
+socket.emit("rollDice");
+
+}
+
+socket.on("dice", number => {
+
+animateDice(number);
+
+});
+
+function animateDice(n){
+
+const cube = document.getElementById("cube");
+
+const rotations = {
+
+1:"rotateX(0deg) rotateY(0deg)",
+
+2:"rotateX(-90deg)",
+
+3:"rotateY(90deg)",
+
+4:"rotateY(-90deg)",
+
+5:"rotateX(90deg)",
+
+6:"rotateY(180deg)"
+
 };
 
+cube.style.transform = rotations[n];
 
-// успешный вход
-socket.on("joined", (data) => {
-
-    myId = data.id;
-
-    loginScreen.style.display = "none";
-    gameScreen.style.display = "block";
-
-    setTimeout(initCells, 300);
-});
-
-
-// обновление игроков
-socket.on("state", (data) => {
-
-    players = data.players;
-    updatePlayers();
-    updateHype();
-    drawPlayers();
-});
-
-
-// ход
-socket.on("yourTurn", () => {
-
-    myTurn = true;
-    messageBox.innerText = "Твой ход";
-});
-
-
-// сообщение
-socket.on("message", (text) => {
-
-    messageBox.innerText = text;
-});
-
-
-// победа
-socket.on("win", (name) => {
-
-    alert("Победил: " + name);
-});
-
-
-// бросок кубика
-rollBtn.onclick = () => {
-
-    if (!myTurn) return;
-
-    dice.classList.add("roll");
-
-    setTimeout(() => {
-
-        socket.emit("roll");
-
-    }, 500);
-
-    setTimeout(() => {
-
-        dice.classList.remove("roll");
-
-    }, 800);
-};
-
-
-// показать значение кубика
-socket.on("dice", (value) => {
-
-    dice.innerText = value;
-    myTurn = false;
-});
-
-
-// обновить список игроков
-function updatePlayers() {
-
-    playersList.innerHTML = "";
-
-    for (let id in players) {
-
-        const p = players[id];
-
-        const div = document.createElement("div");
-
-        div.innerHTML =
-            `<span style="color:${p.color}">⬤</span> ${p.name}`;
-
-        playersList.appendChild(div);
-    }
 }
 
+socket.on("update", players => {
 
-// обновить хайп
-function updateHype() {
+drawPlayers(players);
 
-    hypeList.innerHTML = "";
+});
 
-    for (let id in players) {
+function drawPlayers(players){
 
-        const p = players[id];
+const container = document.getElementById("tokens");
 
-        const div = document.createElement("div");
+container.innerHTML="";
 
-        div.innerHTML =
-            `<span style="color:${p.color}">⬤</span> ${p.name}: ${p.hype}`;
+Object.values(players).forEach(p=>{
 
-        hypeList.appendChild(div);
-    }
+const pos = cells[p.position];
+
+const el = document.createElement("div");
+
+el.className="token";
+
+el.style.background=p.color;
+
+el.style.left=pos.x+"px";
+el.style.top=pos.y+"px";
+
+container.appendChild(el);
+
+});
+
 }
 
+socket.on("scandalCard", card => {
 
-// нарисовать фишки
-function drawPlayers() {
+document.getElementById("cardText").innerText = card.text;
 
-    document.querySelectorAll(".token").forEach(e => e.remove());
+document.getElementById("cardPopup").style.display="block";
 
-    let offset = {};
+});
 
-    for (let id in players) {
+function closeCard(){
 
-        const p = players[id];
+document.getElementById("cardPopup").style.display="none";
 
-        const pos = cells[p.position];
-
-        if (!pos) continue;
-
-        if (!offset[p.position]) offset[p.position] = 0;
-
-        const token = document.createElement("div");
-
-        token.className = "token";
-
-        token.style.background = p.color;
-
-        token.style.left = pos.x + offset[p.position] + "px";
-        token.style.top = pos.y + offset[p.position] + "px";
-
-        offset[p.position] += 12;
-
-        board.appendChild(token);
-    }
 }
 
+socket.on("win", name => {
 
-// адаптация при изменении размера
-window.onresize = () => {
+alert(name+" победил!");
 
-    initCells();
-    drawPlayers();
-};
+});
