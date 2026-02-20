@@ -1,39 +1,39 @@
 const socket = io();
 
-let myId;
+const boardSize = 1024;
 
-// ТОЧНЫЕ координаты 20 клеток под board.jpg (600x600)
+// ТОЧНЫЕ координаты 20 клеток для поля 1024×1024
 const cells = [
 
-/* 1 старт */
-{ x: 60, y: 540 },
+/* 1 старт (низ слева) */
+{ x: 90, y: 930 },
 
 /* вверх */
-{ x: 60, y: 480 },
-{ x: 60, y: 420 },
-{ x: 60, y: 360 },
-{ x: 60, y: 300 },
-{ x: 60, y: 240 },
-{ x: 60, y: 180 },
+{ x: 90, y: 820 },
+{ x: 90, y: 710 },
+{ x: 90, y: 600 },
+{ x: 90, y: 490 },
+{ x: 90, y: 380 },
+{ x: 90, y: 270 },
 
 /* верх вправо */
-{ x: 150, y: 120 },
-{ x: 240, y: 120 },
-{ x: 330, y: 120 },
-{ x: 420, y: 120 },
+{ x: 250, y: 120 },
+{ x: 400, y: 120 },
+{ x: 550, y: 120 },
+{ x: 700, y: 120 },
 
 /* вправо вниз */
-{ x: 510, y: 180 },
-{ x: 510, y: 240 },
-{ x: 510, y: 300 },
-{ x: 510, y: 360 },
-{ x: 510, y: 420 },
+{ x: 880, y: 270 },
+{ x: 880, y: 380 },
+{ x: 880, y: 490 },
+{ x: 880, y: 600 },
+{ x: 880, y: 710 },
 
 /* низ влево */
-{ x: 420, y: 540 },
-{ x: 330, y: 540 },
-{ x: 240, y: 540 },
-{ x: 150, y: 540 }
+{ x: 700, y: 930 },
+{ x: 550, y: 930 },
+{ x: 400, y: 930 },
+{ x: 250, y: 930 }
 
 ];
 
@@ -108,6 +108,7 @@ cube.style.transform = rotations[n];
 socket.on("update", players => {
 
 drawPlayers(players);
+showHype(players);
 
 });
 
@@ -117,11 +118,11 @@ const container = document.getElementById("tokens");
 
 container.innerHTML="";
 
-Object.values(players).forEach((p,index)=>{
+let index=0;
+
+Object.values(players).forEach(p=>{
 
 const pos = cells[p.position];
-
-if(!pos) return;
 
 const el = document.createElement("div");
 
@@ -129,12 +130,28 @@ el.className="token";
 
 el.style.background=p.color;
 
-el.style.left=(pos.x + index*5)+"px";
-el.style.top=(pos.y + index*5)+"px";
+el.style.left=(pos.x + index*8)+"px";
+el.style.top=(pos.y + index*8)+"px";
 
 container.appendChild(el);
 
+index++;
+
 });
+
+}
+
+function showHype(players){
+
+let text="";
+
+Object.values(players).forEach(p=>{
+
+text += p.name + ": " + p.hype + " хайп<br>";
+
+});
+
+document.getElementById("status").innerHTML=text;
 
 }
 
