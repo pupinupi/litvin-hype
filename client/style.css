@@ -1,0 +1,157 @@
+/* ===== ОБЩИЕ НАСТРОЙКИ ===== */
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #111;
+  color: white;
+  text-align: center;
+}
+
+/* ===== СТАРТОВЫЙ ЭКРАН ===== */
+
+#start {
+  margin-top: 40px;
+}
+
+input {
+  padding: 10px;
+  margin: 10px;
+  border-radius: 8px;
+  border: none;
+  width: 200px;
+  font-size: 16px;
+}
+
+button {
+  padding: 10px 20px;
+  margin: 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  background: #ff3c00;
+  color: white;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: #ff5e2e;
+  transform: scale(1.05);
+}
+
+/* ===== ВЫБОР ФИШКИ ===== */
+
+#choices {
+  margin-top: 20px;
+}
+
+.choice {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-block;
+  margin: 5px;
+  cursor: pointer;
+  border: 3px solid white;
+  transition: 0.2s;
+}
+
+.choice:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 10px white;
+}
+
+/* ===== ИГРА ===== */
+
+#game {
+  display: none;
+  margin-top: 20px;
+}
+
+/* ===== ПОЛЕ ===== */
+
+#board {
+  width: 600px;
+  max-width: 95vw;
+  aspect-ratio: 1/1;
+  margin: 20px auto;
+  position: relative;
+}
+
+/* Картинка поля */
+.board-img {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  object-fit: contain;
+  z-index: 1;
+}
+
+/* ===== ФИШКИ ===== */
+
+.token {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 3px solid white;
+  z-index: 999;
+  transition: all 0.4s ease;
+}
+
+/* ===== ИНФО БЛОК ===== */
+
+#info {
+  margin-top: 15px;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+/* ===== КУБИК ===== */
+
+#dice {
+  font-size: 50px;
+  margin: 15px;
+  animation-duration: 0.4s;
+}
+
+@keyframes shake {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(20deg); }
+  50% { transform: rotate(-20deg); }
+  75% { transform: rotate(15deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.dice-animate {
+  animation: shake 0.4s ease;
+}
+
+/* ===== ПОПАП СКАНДАЛ ===== */
+
+#popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #ff0000;
+  padding: 30px;
+  border-radius: 15px;
+  font-size: 24px;
+  font-weight: bold;
+  box-shadow: 0 0 30px red;
+  z-index: 2000;
+  display: none;
+  animation: pop 0.3s ease;
+}
+
+@keyframes pop {
+  from { transform: translate(-50%, -50%) scale(0.5); }
+  to { transform: translate(-50%, -50%) scale(1); }
+}
