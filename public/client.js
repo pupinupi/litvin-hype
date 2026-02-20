@@ -1,174 +1,53 @@
 const socket = io();
 
-/*
-Координаты в процентах от изображения
-0% = левый край
-100% = правый край
-*/
+let calibrationMode = true;
+let cells = [];
 
-const cells = [
+const board = document.getElementById("board");
+const tokens = document.getElementById("tokens");
 
-{ x: 8, y: 92 },  // старт
+if(calibrationMode){
 
-{ x: 8, y: 80 },
-{ x: 8, y: 68 },
-{ x: 8, y: 56 },
-{ x: 8, y: 44 },
-{ x: 8, y: 32 },
-{ x: 8, y: 20 },
+alert("Режим калибровки.\nНажми по очереди на все 20 клеток начиная со СТАРТ и далее по часовой стрелке.");
 
-{ x: 22, y: 10 },
-{ x: 36, y: 10 },
-{ x: 50, y: 10 },
-{ x: 64, y: 10 },
+board.onclick = function(e){
 
-{ x: 88, y: 20 },
-{ x: 88, y: 32 },
-{ x: 88, y: 44 },
-{ x: 88, y: 56 },
-{ x: 88, y: 68 },
+const rect = board.getBoundingClientRect();
 
-{ x: 64, y: 92 },
-{ x: 50, y: 92 },
-{ x: 36, y: 92 },
-{ x: 22, y: 92 }
+const x = e.clientX - rect.left;
+const y = e.clientY - rect.top;
 
-];
+cells.push({x,y});
 
-function createRoom(){
+drawCalibrationPoint(x,y,cells.length);
 
-const name = document.getElementById("name").value;
-const color = document.getElementById("color").value;
+if(cells.length===20){
 
-socket.emit("createRoom",{name,color});
+console.log("ГОТОВЫЕ КООРДИНАТЫ:");
+console.log(JSON.stringify(cells,null,2));
+
+alert("Готово. Теперь пришли мне координаты из консоли.");
 
 }
-
-function joinRoom(){
-
-const room = document.getElementById("roomInput").value;
-const name = document.getElementById("name").value;
-const color = document.getElementById("color").value;
-
-socket.emit("joinRoom",{room,name,color});
-
-startGame();
-
-}
-
-socket.on("roomCreated", room => {
-
-document.getElementById("roomCode").innerText =
-"Код комнаты: "+room;
-
-startGame();
-
-});
-
-function startGame(){
-
-document.getElementById("menu").style.display="none";
-document.getElementById("game").style.display="block";
-
-}
-
-function rollDice(){
-
-socket.emit("rollDice");
-
-}
-
-socket.on("dice", number => {
-
-animateDice(number);
-
-});
-
-function animateDice(n){
-
-const cube = document.getElementById("cube");
-
-const rotations = {
-
-1:"rotateX(0deg)",
-2:"rotateX(-90deg)",
-3:"rotateY(90deg)",
-4:"rotateY(-90deg)",
-5:"rotateX(90deg)",
-6:"rotateY(180deg)"
 
 };
 
-cube.style.transform = rotations[n];
-
 }
 
-socket.on("update", players => {
-
-drawPlayers(players);
-showHype(players);
-
-});
-
-function drawPlayers(players){
-
-const container = document.getElementById("tokens");
-
-container.innerHTML="";
-
-let offset = 0;
-
-Object.values(players).forEach(p=>{
-
-const pos = cells[p.position];
+function drawCalibrationPoint(x,y,num){
 
 const el = document.createElement("div");
 
-el.className="token";
+el.style.position="absolute";
+el.style.left=x+"px";
+el.style.top=y+"px";
+el.style.width="20px";
+el.style.height="20px";
+el.style.background="red";
+el.style.borderRadius="50%";
 
-el.style.background=p.color;
+el.innerHTML=num;
 
-el.style.left = (pos.x + offset) + "%";
-el.style.top = (pos.y + offset) + "%";
-
-container.appendChild(el);
-
-offset += 1.5;
-
-});
-
-}
-
-function showHype(players){
-
-let text="";
-
-Object.values(players).forEach(p=>{
-
-text += p.name + ": " + p.hype + " хайп<br>";
-
-});
-
-document.getElementById("status").innerHTML=text;
+tokens.appendChild(el);
 
 }
-
-socket.on("scandalCard", card => {
-
-document.getElementById("cardText").innerText = card.text;
-
-document.getElementById("cardPopup").style.display="block";
-
-});
-
-function closeCard(){
-
-document.getElementById("cardPopup").style.display="none";
-
-}
-
-socket.on("win", name => {
-
-alert(name+" победил!");
-
-});
