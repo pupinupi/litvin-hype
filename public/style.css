@@ -1,109 +1,58 @@
-body{
-background:#111;
-color:white;
-font-family:Arial;
-text-align:center;
+body {
+  margin:0;
+  background:#111;
+  color:white;
+  text-align:center;
+  font-family:Arial;
 }
 
-#boardContainer{
-position:relative;
-width:600px;
-margin:auto;
+#board {
+  width:95vw;
+  max-width:600px;
+  aspect-ratio:1/1;
+  margin:20px auto;
+  position:relative;
 }
 
-#board{
-width:600px;
+.board-img {
+  width:100%;
+  height:100%;
+  position:absolute;
 }
 
-.token{
-
-width:20px;
-height:20px;
-
-border-radius:50%;
-
-position:absolute;
-
-border:2px solid white;
-
+.token {
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  position:absolute;
+  transform:translate(-50%,-50%);
+  border:2px solid white;
+  transition:0.4s;
+  z-index:5;
 }
 
-#ui{
-margin-top:20px;
+.choice {
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  display:inline-block;
+  margin:5px;
+  border:3px solid white;
 }
 
-#dice3d{
-
-width:80px;
-height:80px;
-
-margin:auto;
-
-perspective:800px;
-
+#dice {
+  font-size:60px;
+  margin:20px;
+  cursor:pointer;
 }
 
-.cube{
-
-width:80px;
-height:80px;
-
-position:relative;
-
-transform-style:preserve-3d;
-
-transform:rotateX(0) rotateY(0);
-
-transition:transform 1s;
-
-}
-
-.face{
-
-position:absolute;
-
-width:80px;
-height:80px;
-
-background:white;
-
-color:black;
-
-font-size:30px;
-
-display:flex;
-
-align-items:center;
-justify-content:center;
-
-border:2px solid black;
-
-}
-
-.front{ transform:translateZ(40px); }
-.back{ transform:rotateY(180deg) translateZ(40px); }
-
-.right{ transform:rotateY(90deg) translateZ(40px); }
-.left{ transform:rotateY(-90deg) translateZ(40px); }
-
-.top{ transform:rotateX(90deg) translateZ(40px); }
-.bottom{ transform:rotateX(-90deg) translateZ(40px); }
-
-#cardPopup{
-
-position:fixed;
-
-top:50%;
-left:50%;
-
-transform:translate(-50%,-50%);
-
-background:#222;
-
-padding:20px;
-
-border:2px solid white;
-
-font-size:24px;
-
+#popup {
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:red;
+  padding:20px;
+  border-radius:10px;
+  display:none;
 }
