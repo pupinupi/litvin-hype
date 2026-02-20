@@ -2,33 +2,38 @@ const socket = io();
 
 let myId;
 
+// ТОЧНЫЕ координаты 20 клеток под board.jpg (600x600)
 const cells = [
 
-{ x:50,y:520 },
-{ x:50,y:450 },
-{ x:50,y:380 },
-{ x:50,y:310 },
-{ x:50,y:240 },
+/* 1 старт */
+{ x: 60, y: 540 },
 
-{ x:50,y:170 },
-{ x:50,y:100 },
+/* вверх */
+{ x: 60, y: 480 },
+{ x: 60, y: 420 },
+{ x: 60, y: 360 },
+{ x: 60, y: 300 },
+{ x: 60, y: 240 },
+{ x: 60, y: 180 },
 
-{ x:150,y:100 },
-{ x:250,y:100 },
-{ x:350,y:100 },
-{ x:450,y:100 },
+/* верх вправо */
+{ x: 150, y: 120 },
+{ x: 240, y: 120 },
+{ x: 330, y: 120 },
+{ x: 420, y: 120 },
 
-{ x:550,y:100 },
-{ x:550,y:170 },
-{ x:550,y:240 },
-{ x:550,y:310 },
+/* вправо вниз */
+{ x: 510, y: 180 },
+{ x: 510, y: 240 },
+{ x: 510, y: 300 },
+{ x: 510, y: 360 },
+{ x: 510, y: 420 },
 
-{ x:550,y:380 },
-{ x:550,y:450 },
-
-{ x:450,y:520 },
-{ x:350,y:520 },
-{ x:250,y:520 }
+/* низ влево */
+{ x: 420, y: 540 },
+{ x: 330, y: 540 },
+{ x: 240, y: 540 },
+{ x: 150, y: 540 }
 
 ];
 
@@ -88,15 +93,10 @@ const cube = document.getElementById("cube");
 const rotations = {
 
 1:"rotateX(0deg) rotateY(0deg)",
-
 2:"rotateX(-90deg)",
-
 3:"rotateY(90deg)",
-
 4:"rotateY(-90deg)",
-
 5:"rotateX(90deg)",
-
 6:"rotateY(180deg)"
 
 };
@@ -117,9 +117,11 @@ const container = document.getElementById("tokens");
 
 container.innerHTML="";
 
-Object.values(players).forEach(p=>{
+Object.values(players).forEach((p,index)=>{
 
 const pos = cells[p.position];
+
+if(!pos) return;
 
 const el = document.createElement("div");
 
@@ -127,8 +129,8 @@ el.className="token";
 
 el.style.background=p.color;
 
-el.style.left=pos.x+"px";
-el.style.top=pos.y+"px";
+el.style.left=(pos.x + index*5)+"px";
+el.style.top=(pos.y + index*5)+"px";
 
 container.appendChild(el);
 
