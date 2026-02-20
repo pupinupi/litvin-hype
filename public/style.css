@@ -1,0 +1,23 @@
+body{
+background:black;
+color:white;
+text-align:center;
+font-family:Arial;
+}
+
+#board{
+position:relative;
+width:800px;
+margin:auto;
+}
+
+#board img{
+width:100%;
+}
+
+.token{
+width:20px;
+height:20px;
+border-radius:50%;
+position:absolute;
+}
