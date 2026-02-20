@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Литвин — Путь к хайпу</title>
+<title>Литвин. Путь к хайпу</title>
 
 <link rel="stylesheet" href="style.css">
 
@@ -14,36 +14,67 @@
 
 <div id="menu">
 
-<h2>Вход в игру</h2>
+<h1>Литвин. Путь к хайпу</h1>
 
 <input id="name" placeholder="Имя">
-
-<input id="room" placeholder="Код комнаты">
 
 <select id="color">
 <option value="red">Красный</option>
 <option value="blue">Синий</option>
 <option value="green">Зелёный</option>
 <option value="yellow">Жёлтый</option>
+<option value="purple">Фиолетовый</option>
+<option value="cyan">Голубой</option>
 </select>
 
-<button onclick="join()">ВОЙТИ</button>
+<br><br>
+
+<button onclick="createRoom()">Создать комнату</button>
+
+<br><br>
+
+<input id="roomInput" placeholder="Код комнаты">
+
+<button onclick="joinRoom()">Войти</button>
+
+<p id="roomCode"></p>
 
 </div>
 
-
 <div id="game" style="display:none">
+
+<div id="boardContainer">
 
 <img src="board.jpg" id="board">
 
-<canvas id="canvas" width="800" height="800"></canvas>
+<div id="tokens"></div>
 
-<button onclick="roll()">Бросить кубик</button>
+</div>
 
-<div id="dice"></div>
+<div id="ui">
 
-<div id="info"></div>
+<div id="dice3d">
+<div class="cube" id="cube">
+<div class="face front">1</div>
+<div class="face back">6</div>
+<div class="face right">3</div>
+<div class="face left">4</div>
+<div class="face top">5</div>
+<div class="face bottom">2</div>
+</div>
+</div>
 
+<button onclick="rollDice()">Бросить кубик</button>
+
+<p id="status"></p>
+
+</div>
+
+</div>
+
+<div id="cardPopup" style="display:none">
+<div id="cardText"></div>
+<button onclick="closeCard()">OK</button>
 </div>
 
 </body>
