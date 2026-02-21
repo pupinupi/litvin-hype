@@ -15,104 +15,107 @@ const cells = [
   "half","+3","risk","+3","skip","+2","scandal","+8","zero","+4"
 ];
 
-const scandalCards = [-1,-2,-3,-4,-5,-5];
+const scandalCards = [
+ "-1 хайп","-2 хайп","-3 хайп","-4 хайп","-5 хайп","-5 хайп, пропусти ход"
+];
 
-io.on("connection", (socket) => {
+io.on("connection", socket => {
 
-  socket.on("joinRoom", ({name, room, color}) => {
-
-    if (!rooms[room]) rooms[room] = {
-      players: [],
-      turn: 0
-    };
+  socket.on("joinRoom", ({name,room,color})=>{
+    if(!rooms[room]) rooms[room]={players:[],turn:0};
 
     rooms[room].players.push({
-      id: socket.id,
+      id:socket.id,
       name,
       color,
-      position: 0,
-      hype: 0,
-      skip: false
+      position:0,
+      hype:0,
+      skip:false
     });
 
     socket.join(room);
-    io.to(room).emit("updateState", rooms[room]);
+    io.to(room).emit("state",rooms[room]);
   });
 
-  socket.on("rollDice", (room) => {
+  socket.on("rollDice",(room)=>{
+    const data=rooms[room];
+    if(!data) return;
 
-    const roomData = rooms[room];
-    if (!roomData) return;
+    const player=data.players[data.turn];
+    if(!player || player.id!==socket.id) return;
 
-    const player = roomData.players[roomData.turn];
-    if (!player || player.id !== socket.id) return;
-
-    if (player.skip) {
-      player.skip = false;
-      nextTurn(roomData);
-      io.to(room).emit("updateState", roomData);
+    if(player.skip){
+      player.skip=false;
+      nextTurn(data);
+      io.to(room).emit("state",data);
       return;
     }
 
-    const roll = randomDice();
-    player.position = (player.position + roll) % 20;
+    const roll=randomDice();
+    io.to(room).emit("roll",roll);
 
-    applyCell(player);
+    player.position=(player.position+roll)%20;
 
-    if (player.hype >= 100) {
-      io.to(room).emit("winner", player.name);
+    let gained=applyCell(player);
+
+    if(gained>8) player.skip=true;
+
+    if(player.hype>=100){
+      io.to(room).emit("winner",player.name);
       return;
     }
 
-    nextTurn(roomData);
-
-    io.to(room).emit("diceResult", roll);
-    io.to(room).emit("updateState", roomData);
+    nextTurn(data);
+    io.to(room).emit("state",data);
   });
 
-  socket.on("disconnect", () => {
-    for (let room in rooms) {
-      rooms[room].players = rooms[room].players.filter(p => p.id !== socket.id);
+  socket.on("disconnect",()=>{
+    for(let r in rooms){
+      rooms[r].players=rooms[r].players.filter(p=>p.id!==socket.id);
     }
   });
 
 });
 
-function randomDice() {
-  return Math.floor(Math.random() * 6) + 1;
-}
+function randomDice(){ return Math.floor(Math.random()*6)+1; }
 
-function applyCell(player) {
+function applyCell(player){
+  const type=cells[player.position];
+  let gained=0;
 
-  const type = cells[player.position];
-
-  if (type.startsWith("+")) {
-    player.hype += parseInt(type.replace("+",""));
+  if(type.startsWith("+")){
+    gained=parseInt(type.replace("+",""));
+    player.hype+=gained;
   }
 
-  if (type === "zero") player.hype = 0;
+  if(type==="zero") player.hype=0;
 
-  if (type === "half") player.hype = Math.floor(player.hype / 2);
-
-  if (type === "skip") player.skip = true;
-
-  if (type === "risk") {
-    const roll = randomDice();
-    if (roll <= 3) player.hype -= 5;
-    else player.hype += 5;
+  if(type==="half"){
+    player.hype=Math.floor(player.hype/2);
   }
 
-  if (type === "scandal") {
-    const card = scandalCards[Math.floor(Math.random()*scandalCards.length)];
-    player.hype += card;
+  if(type==="skip") player.skip=true;
+
+  if(type==="risk"){
+    const r=randomDice();
+    if(r<=3){ player.hype-=5; gained=-5; }
+    else { player.hype+=5; gained=5; }
   }
 
-  if (player.hype < 0) player.hype = 0;
+  if(type==="scandal"){
+    const card=scandalCards[Math.floor(Math.random()*scandalCards.length)];
+    io.emit("scandal",card);
+    const minus=parseInt(card);
+    if(!isNaN(minus)) player.hype+=minus;
+    if(card.includes("пропусти")) player.skip=true;
+  }
+
+  if(player.hype<0) player.hype=0;
+  return gained;
 }
 
-function nextTurn(room) {
-  room.turn = (room.turn + 1) % room.players.length;
+function nextTurn(room){
+  room.turn=(room.turn+1)%room.players.length;
 }
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log("Server running"));
+server.listen(process.env.PORT||3000);
