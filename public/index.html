@@ -7,8 +7,9 @@
 </head>
 <body>
 
-<div id="start">
+<div id="startScreen">
 <h2>Litvin Hype</h2>
+
 <input id="nameInput" placeholder="Имя">
 <input id="roomInput" placeholder="Код комнаты">
 
@@ -22,7 +23,8 @@
 <button id="joinBtn">Играть</button>
 </div>
 
-<div id="game" style="display:none;">
+<div id="gameScreen" style="display:none;">
+
 <div id="board">
 <img src="board.jpg" id="boardImg">
 <div id="tokens"></div>
@@ -34,9 +36,8 @@
 </div>
 
 <div id="info"></div>
-</div>
 
-<div id="modal"></div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -45,9 +46,17 @@ const socket = io();
 
 let state = null;
 let previousState = null;
-let myRoom = null;
 let selectedColor = null;
+let myRoom = null;
 let animating = false;
+
+const startScreen = document.getElementById("startScreen");
+const gameScreen = document.getElementById("gameScreen");
+const joinBtn = document.getElementById("joinBtn");
+const rollBtn = document.getElementById("rollBtn");
+const nameInput = document.getElementById("nameInput");
+const roomInput = document.getElementById("roomInput");
+const infoBox = document.getElementById("info");
 
 const positions = [
 { x:113,y:588},{ x:108,y:464},{ x:108,y:345},{ x:108,y:235},{ x:108,y:135},
@@ -56,71 +65,89 @@ const positions = [
 { x:776,y:610},{ x:644,y:602},{ x:514,y:602},{ x:365,y:599},{ x:224,y:605}
 ];
 
+// выбор цвета
 document.querySelectorAll(".choice").forEach(c=>{
-  c.onclick=()=>{
+  c.onclick = ()=>{
     document.querySelectorAll(".choice").forEach(x=>x.classList.remove("sel"));
     c.classList.add("sel");
-    selectedColor=c.dataset.color;
+    selectedColor = c.dataset.color;
   };
 });
 
-joinBtn.onclick=()=>{
-  const name=nameInput.value.trim();
-  const room=roomInput.value.trim();
-  if(!name||!room||!selectedColor){alert("Заполните всё");return;}
-  myRoom=room;
-  socket.emit("joinRoom",{name,room,color:selectedColor});
-  start.style.display="none";
-  game.style.display="block";
+// вход
+joinBtn.onclick = ()=>{
+  const name = nameInput.value.trim();
+  const room = roomInput.value.trim();
+
+  if(!name || !room || !selectedColor){
+    alert("Заполните всё");
+    return;
+  }
+
+  myRoom = room;
+
+  socket.emit("joinRoom",{
+    name: name,
+    room: room,
+    color: selectedColor
+  });
+
+  startScreen.style.display = "none";
+  gameScreen.style.display = "block";
 };
 
-socket.on("roll",num=>{
-  const diceFaces=["⚀","⚁","⚂","⚃","⚄","⚅"];
-  document.getElementById("dice").innerText=diceFaces[num-1];
+// кубик
+socket.on("roll", num=>{
+  const faces = ["⚀","⚁","⚂","⚃","⚄","⚅"];
+  document.getElementById("dice").innerText = faces[num-1];
 });
 
-socket.on("state",newState=>{
+// обновление состояния
+socket.on("state", newState => {
 
   if(!previousState){
-    previousState=JSON.parse(JSON.stringify(newState));
-    state=newState;
+    previousState = JSON.parse(JSON.stringify(newState));
+    state = newState;
     render();
     return;
   }
 
-  const moving=newState.players.find((p,i)=>
-    p.position!==previousState.players[i].position
+  const moved = newState.players.find((p,i)=>
+    p.position !== previousState.players[i].position
   );
 
-  state=newState;
+  state = newState;
 
-  if(moving){
+  if(moved){
     animateMove(
-      previousState.players.find(p=>p.id===moving.id).position,
-      moving.position,
-      moving.id
+      previousState.players.find(p=>p.id===moved.id).position,
+      moved.position,
+      moved.id
     );
-  } else render();
+  } else {
+    render();
+  }
 
-  previousState=JSON.parse(JSON.stringify(newState));
+  previousState = JSON.parse(JSON.stringify(newState));
 });
 
-function animateMove(from,to,id){
+function animateMove(from, to, playerId){
 
-  animating=true;
-  let current=from;
+  animating = true;
+  let current = from;
 
   function step(){
-    if(current===to){
-      animating=false;
+    if(current === to){
+      animating = false;
       render();
       return;
     }
 
-    current=(current+1)%20;
-    state.players.find(p=>p.id===id).position=current;
+    current = (current + 1) % 20;
+    state.players.find(p=>p.id===playerId).position = current;
     render();
-    setTimeout(step,250);
+
+    setTimeout(step, 250);
   }
 
   step();
@@ -128,29 +155,40 @@ function animateMove(from,to,id){
 
 function render(){
 
-  const layer=document.getElementById("tokens");
-  layer.innerHTML="";
+  const layer = document.getElementById("tokens");
+  layer.innerHTML = "";
 
   state.players.forEach(p=>{
-    const token=document.createElement("div");
-    token.className="token";
-    if(p.id===state.players[state.turn].id)
-      token.classList.add("active");
 
-    token.style.background=p.color;
-    token.style.transform=`translate(${positions[p.position].x}px,${positions[p.position].y}px)`;
+    const token = document.createElement("div");
+    token.className = "token";
+
+    if(p.id === state.players[state.turn].id){
+      token.classList.add("active");
+    }
+
+    token.style.background = p.color;
+    token.style.transform =
+      `translate(${positions[p.position].x}px,${positions[p.position].y}px)`;
+
     layer.appendChild(token);
   });
 
-  let html="<h3>Игроки:</h3>";
+  let html = "<h3>Игроки:</h3>";
   state.players.forEach(p=>{
-    html+=`<div><span style="color:${p.color}">${p.name}</span> — ${p.hype} хайп</div>`;
+    html += `<div><span style="color:${p.color}">${p.name}</span> — ${p.hype} хайп</div>`;
   });
 
-  info.innerHTML=html;
+  infoBox.innerHTML = html;
 
-  rollBtn.disabled=animating||state.players[state.turn].id!==socket.id;
+  rollBtn.disabled =
+    animating ||
+    state.players[state.turn].id !== socket.id;
 }
+
+rollBtn.onclick = ()=>{
+  socket.emit("rollDice", myRoom);
+};
 
 </script>
 </body>
