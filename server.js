@@ -10,112 +10,169 @@ app.use(express.static("public"));
 
 let rooms = {};
 
-const cells = [
-  "start","+3","+2","scandal","risk","+2","scandal","+3","+5","zero",
-  "half","+3","risk","+3","skip","+2","scandal","+8","zero","+4"
-];
-
 const scandalCards = [
- "-1 хайп","-2 хайп","-3 хайп","-4 хайп","-5 хайп","-5 хайп, пропусти ход"
+  "-1 хайп",
+  "-2 хайп",
+  "-3 хайп",
+  "-3 хайп у всех игроков",
+  "-4 хайп",
+  "-5 хайп",
+  "-5 хайп и пропуск хода"
 ];
 
-io.on("connection", socket => {
+// твои 20 клеток по порядку
+const board = [
+  "start",
+  "+3",
+  "+2",
+  "scandal",
+  "risk",
+  "+2",
+  "scandal",
+  "+3",
+  "+5",
+  "loseAll",
+  "halfSkip",
+  "+3",
+  "risk",
+  "+3",
+  "skip",
+  "+2",
+  "scandal",
+  "+8",
+  "loseAll",
+  "+4"
+];
 
-  socket.on("joinRoom", ({name,room,color})=>{
-    if(!rooms[room]) rooms[room]={players:[],turn:0};
+io.on("connection", (socket) => {
 
-    rooms[room].players.push({
-      id:socket.id,
-      name,
-      color,
-      position:0,
-      hype:0,
-      skip:false
-    });
+  socket.on("joinRoom", ({ name, room, color }) => {
 
     socket.join(room);
-    io.to(room).emit("state",rooms[room]);
+
+    if (!rooms[room]) {
+      rooms[room] = {
+        players: [],
+        turn: 0
+      };
+    }
+
+    rooms[room].players.push({
+      id: socket.id,
+      name,
+      color,
+      position: 0,
+      hype: 0,
+      skip: false
+    });
+
+    io.to(room).emit("state", rooms[room]);
   });
 
-  socket.on("rollDice",(room)=>{
-    const data=rooms[room];
-    if(!data) return;
+  socket.on("rollDice", (room) => {
 
-    const player=data.players[data.turn];
-    if(!player || player.id!==socket.id) return;
+    const game = rooms[room];
+    if (!game) return;
 
-    if(player.skip){
-      player.skip=false;
-      nextTurn(data);
-      io.to(room).emit("state",data);
+    const player = game.players[game.turn];
+    if (!player || player.id !== socket.id) return;
+
+    if (player.skip) {
+      player.skip = false;
+      game.turn = (game.turn + 1) % game.players.length;
+      io.to(room).emit("state", game);
       return;
     }
 
-    const roll=randomDice();
-    io.to(room).emit("roll",roll);
+    const roll = Math.floor(Math.random() * 6) + 1;
+    io.to(room).emit("roll", roll);
 
-    player.position=(player.position+roll)%20;
+    player.position = (player.position + roll) % 20;
 
-    let gained=applyCell(player);
+    const cell = board[player.position];
 
-    if(gained>8) player.skip=true;
+    let gainedThisTurn = 0;
 
-    if(player.hype>=100){
-      io.to(room).emit("winner",player.name);
+    // ===== ЛОГИКА КЛЕТОК =====
+
+    if (cell.startsWith("+")) {
+      const value = parseInt(cell.replace("+",""));
+      player.hype += value;
+      gainedThisTurn += value;
+    }
+
+    if (cell === "loseAll") {
+      player.hype = 0;
+    }
+
+    if (cell === "halfSkip") {
+      player.hype = Math.floor(player.hype / 2);
+      player.skip = true;
+    }
+
+    if (cell === "skip") {
+      player.skip = true;
+    }
+
+    if (cell === "risk") {
+      const riskRoll = Math.floor(Math.random() * 6) + 1;
+      if (riskRoll <= 3) {
+        player.hype -= 5;
+      } else {
+        player.hype += 5;
+        gainedThisTurn += 5;
+      }
+      if (player.hype < 0) player.hype = 0;
+      io.to(room).emit("roll", riskRoll);
+    }
+
+    if (cell === "scandal") {
+      const card = scandalCards[Math.floor(Math.random() * scandalCards.length)];
+      io.to(room).emit("scandal", card);
+
+      if (card.includes("-1")) player.hype -= 1;
+      if (card.includes("-2")) player.hype -= 2;
+      if (card.includes("-3 хайп\"") && !card.includes("у всех")) player.hype -= 3;
+      if (card.includes("-4")) player.hype -= 4;
+      if (card.includes("-5 хайп\"") && !card.includes("пропуск")) player.hype -= 5;
+      if (card.includes("у всех")) {
+        game.players.forEach(p => {
+          p.hype -= 3;
+          if (p.hype < 0) p.hype = 0;
+        });
+      }
+      if (card.includes("пропуск")) player.skip = true;
+
+      if (player.hype < 0) player.hype = 0;
+    }
+
+    // ===== ПЕРЕГРЕВ =====
+    if (gainedThisTurn > 8) {
+      player.skip = true;
+    }
+
+    // ===== ПОБЕДА =====
+    if (player.hype >= 100) {
+      io.to(room).emit("winner", player.name);
       return;
     }
 
-    nextTurn(data);
-    io.to(room).emit("state",data);
+    // следующий ход
+    game.turn = (game.turn + 1) % game.players.length;
+
+    io.to(room).emit("state", game);
   });
 
-  socket.on("disconnect",()=>{
-    for(let r in rooms){
-      rooms[r].players=rooms[r].players.filter(p=>p.id!==socket.id);
+  socket.on("disconnect", () => {
+    for (const room in rooms) {
+      rooms[room].players =
+        rooms[room].players.filter(p => p.id !== socket.id);
+      io.to(room).emit("state", rooms[room]);
     }
   });
 
 });
 
-function randomDice(){ return Math.floor(Math.random()*6)+1; }
-
-function applyCell(player){
-  const type=cells[player.position];
-  let gained=0;
-
-  if(type.startsWith("+")){
-    gained=parseInt(type.replace("+",""));
-    player.hype+=gained;
-  }
-
-  if(type==="zero") player.hype=0;
-
-  if(type==="half"){
-    player.hype=Math.floor(player.hype/2);
-  }
-
-  if(type==="skip") player.skip=true;
-
-  if(type==="risk"){
-    const r=randomDice();
-    if(r<=3){ player.hype-=5; gained=-5; }
-    else { player.hype+=5; gained=5; }
-  }
-
-  if(type==="scandal"){
-    const card=scandalCards[Math.floor(Math.random()*scandalCards.length)];
-    io.emit("scandal",card);
-    const minus=parseInt(card);
-    if(!isNaN(minus)) player.hype+=minus;
-    if(card.includes("пропусти")) player.skip=true;
-  }
-
-  if(player.hype<0) player.hype=0;
-  return gained;
-}
-
-function nextTurn(room){
-  room.turn=(room.turn+1)%room.players.length;
-}
-
-server.listen(process.env.PORT||3000);
+server.listen(3000, () => {
+  console.log("Server started");
+});
