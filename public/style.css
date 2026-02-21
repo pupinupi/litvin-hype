@@ -6,12 +6,13 @@ body{
   font-family:Arial;
 }
 
-#board{
-  width:95vw;
-  max-width:600px;
-  aspect-ratio:1/1;
-  margin:20px auto;
-  position:relative;
+#board {
+  position: relative;
+  width: 600px;
+  height: 600px;
+  background: url("board.jpg") no-repeat center;
+  background-size: contain;
+  margin: auto;
 }
 
 .board-img{
@@ -20,15 +21,13 @@ body{
   position:absolute;
 }
 
-.token{
-  width:22px;
-  height:22px;
-  border-radius:50%;
-  position:absolute;
-  transform:translate(-50%,-50%);
-  border:2px solid white;
-  transition:0.4s;
-  z-index:5;
+#board {
+  position: relative;
+  width: 600px;
+  height: 600px;
+  background: url("board.jpg") no-repeat center;
+  background-size: contain;
+  margin: auto;
 }
 
 .choice{
@@ -56,3 +55,18 @@ body{
   border-radius:10px;
   display:none;
 }
+#diceContainer{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  text-align:center;
+}
+
+#diceBox{
+  font-size:40px;
+  margin-bottom:10px;
+}
+
+
+
