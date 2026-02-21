@@ -9,8 +9,9 @@
 
 <div id="start">
 <h2>Litvin Hype</h2>
-<input id="name" placeholder="Имя">
-<input id="room" placeholder="Код комнаты">
+
+<input id="nameInput" placeholder="Имя">
+<input id="roomInput" placeholder="Код комнаты">
 
 <div id="colors">
 <div class="choice" data-color="red" style="background:red;"></div>
@@ -19,7 +20,7 @@
 <div class="choice" data-color="yellow" style="background:yellow;"></div>
 </div>
 
-<button id="join">Играть</button>
+<button id="joinBtn">Играть</button>
 </div>
 
 <div id="game" style="display:none;">
@@ -51,56 +52,68 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
 
-const socket=io();
-let myRoom=null;
-let selectedColor=null;
-let state=null;
-let animating=false;
+const socket = io();
 
-const positions=[
+let myRoom = null;
+let selectedColor = null;
+let state = null;
+let animating = false;
+
+const positions = [
 { x:113,y:588},{ x:108,y:464},{ x:108,y:345},{ x:108,y:235},{ x:108,y:135},
 { x:232,y:83},{ x:359,y:88},{ x:511,y:91},{ x:660,y:88},{ x:798,y:88},
 { x:920,y:119},{ x:903,y:243},{ x:901,y:351},{ x:895,y:461},{ x:895,y:580},
 { x:776,y:610},{ x:644,y:602},{ x:514,y:602},{ x:365,y:599},{ x:224,y:605}
 ];
 
+const startScreen = document.getElementById("start");
+const gameScreen = document.getElementById("game");
+const nameInput = document.getElementById("nameInput");
+const roomInput = document.getElementById("roomInput");
+const joinBtn = document.getElementById("joinBtn");
+const rollBtn = document.getElementById("rollBtn");
+const infoBox = document.getElementById("info");
+const modal = document.getElementById("modal");
+
 // выбор цвета
 document.querySelectorAll(".choice").forEach(c=>{
-  c.onclick=()=>{
+  c.onclick = ()=>{
     document.querySelectorAll(".choice").forEach(x=>x.classList.remove("sel"));
     c.classList.add("sel");
-    selectedColor=c.getAttribute("data-color");
+    selectedColor = c.getAttribute("data-color");
   };
 });
 
-join.onclick=()=>{
-  const nameVal=name.value.trim();
-  const roomVal=room.value.trim();
-  if(!nameVal||!roomVal||!selectedColor){
+// вход
+joinBtn.onclick = ()=>{
+  const nameVal = nameInput.value.trim();
+  const roomVal = roomInput.value.trim();
+
+  if(!nameVal || !roomVal || !selectedColor){
     alert("Заполните всё");
     return;
   }
 
-  myRoom=roomVal;
+  myRoom = roomVal;
 
   socket.emit("joinRoom",{
-    name:nameVal,
-    room:roomVal,
-    color:selectedColor
+    name: nameVal,
+    room: roomVal,
+    color: selectedColor
   });
 
-  start.style.display="none";
-  game.style.display="block";
+  startScreen.style.display="none";
+  gameScreen.style.display="block";
 };
 
-socket.on("state",s=>{
-  state=s;
+socket.on("state", s=>{
+  state = s;
   render();
 });
 
 function render(){
 
-  const layer=document.getElementById("tokens");
+  const layer = document.getElementById("tokens");
   layer.innerHTML="";
 
   state.players.forEach(p=>{
@@ -119,12 +132,12 @@ function render(){
   const current=state.players[state.turn];
   html+=`<hr>Ходит: ${current.name}`;
 
-  info.innerHTML=html;
+  infoBox.innerHTML=html;
 
   rollBtn.disabled=(current.id!==socket.id)||animating;
 }
 
-// 🎲 3D кубик
+// кубик
 function rotateCube(num){
   const cube=document.getElementById("cube");
   const map={
@@ -139,74 +152,27 @@ function rotateCube(num){
 }
 
 rollBtn.onclick=()=>{
-  socket.emit("rollDice",myRoom);
+  socket.emit("rollDice", myRoom);
 };
 
-socket.on("roll",num=>{
-  animating=true;
+socket.on("roll", num=>{
   rotateCube(num);
 });
 
-// плавное движение
-socket.on("state",s=>{
-  if(!state){ state=s; render(); return; }
-
-  const old=state;
-  state=s;
-
-  const moving=state.players.find((p,i)=>
-    p.position!==old.players[i]?.position
-  );
-
-  if(moving){
-    animateMove(old.players.find(p=>p.id===moving.id)?.position||0,moving.position,moving.id);
-  } else {
-    render();
-  }
-});
-
-function animateMove(from,to,id){
-  animating=true;
-
-  let step=from;
-
-  function next(){
-    if(step===to){
-      animating=false;
-      highlightCell(to);
-      render();
-      return;
-    }
-    step=(step+1)%20;
-    state.players.find(p=>p.id===id).position=step;
-    render();
-    setTimeout(next,200);
-  }
-  next();
-}
-
-function highlightCell(pos){
-  const h=document.getElementById("highlight");
-  h.style.left=positions[pos].x+"px";
-  h.style.top=positions[pos].y+"px";
-  h.style.opacity=1;
-  setTimeout(()=>h.style.opacity=0,800);
-}
-
 // скандал
-socket.on("scandal",text=>{
+socket.on("scandal", text=>{
   modal.innerHTML=`
     <div class="modalBox">
       <h2>СКАНДАЛ</h2>
       <p>${text}</p>
-      <button onclick="modal.style.display='none'">Продолжить</button>
+      <button onclick="document.getElementById('modal').style.display='none'">ОК</button>
     </div>
   `;
   modal.style.display="flex";
 });
 
 // победа
-socket.on("winner",name=>{
+socket.on("winner", name=>{
   modal.innerHTML=`
     <div class="modalBox">
       <h1>${name} победил! 🏆</h1>
