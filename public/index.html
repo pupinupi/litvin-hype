@@ -97,9 +97,28 @@ joinBtn.onclick = ()=>{
 };
 
 // кубик
-socket.on("roll", num=>{
-  const faces = ["⚀","⚁","⚂","⚃","⚄","⚅"];
-  document.getElementById("dice").innerText = faces[num-1];
+socket.on("state", newState => {
+
+  if(!state){
+    state = newState;
+    render();
+    return;
+  }
+
+  const currentPlayer = state.players[state.turn];
+  const updatedPlayer = newState.players.find(p => p.id === currentPlayer.id);
+
+  const oldPosition = currentPlayer.position;
+  const newPosition = updatedPlayer.position;
+
+  state = newState;
+
+  if(oldPosition !== newPosition){
+    animateMove(oldPosition, newPosition, updatedPlayer.id);
+  } else {
+    render();
+  }
+
 });
 
 // обновление состояния
@@ -134,14 +153,29 @@ socket.on("state", newState => {
 function animateMove(from, to, playerId){
 
   animating = true;
+
   let current = from;
 
   function step(){
+
     if(current === to){
       animating = false;
       render();
       return;
     }
+
+    current = (current + 1) % 20;
+
+    const player = state.players.find(p=>p.id===playerId);
+    player.position = current;
+
+    render();
+
+    setTimeout(step, 250);
+  }
+
+  step();
+}
 
     current = (current + 1) % 20;
     state.players.find(p=>p.id===playerId).position = current;
