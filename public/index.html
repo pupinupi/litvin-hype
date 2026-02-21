@@ -8,7 +8,7 @@
 <body>
 
 <div id="startScreen">
-  <h2>Вход в игру</h2>
+  <h2>Вход</h2>
   <input id="nameInput" placeholder="Имя">
 
   <div id="colors">
@@ -22,47 +22,43 @@
 </div>
 
 <div id="gameScreen" style="display:none;">
-
-  <div id="boardWrapper">
-    <div id="board"></div>
-  </div>
+  <div id="board"></div>
 
   <div id="diceArea">
-    <div id="dice">🎲</div>
-    <button id="rollBtn">Бросить кубик</button>
+    <img id="diceImg" src="https://upload.wikimedia.org/wikipedia/commons/1/1b/Dice-1-b.svg">
+    <button id="rollBtn">Бросить</button>
   </div>
 
   <div id="info">Хайп: 0</div>
-
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
 
-let myId = null;
-let selectedColor = null;
+let myId=null;
+let selectedColor=null;
 
-const startScreen = document.getElementById("startScreen");
-const gameScreen = document.getElementById("gameScreen");
-const joinBtn = document.getElementById("joinBtn");
-const nameInput = document.getElementById("nameInput");
-const choices = document.querySelectorAll(".choice");
-const board = document.getElementById("board");
-const dice = document.getElementById("dice");
-const rollBtn = document.getElementById("rollBtn");
-const info = document.getElementById("info");
+const startScreen=document.getElementById("startScreen");
+const gameScreen=document.getElementById("gameScreen");
+const joinBtn=document.getElementById("joinBtn");
+const nameInput=document.getElementById("nameInput");
+const choices=document.querySelectorAll(".choice");
+const board=document.getElementById("board");
+const rollBtn=document.getElementById("rollBtn");
+const info=document.getElementById("info");
+const diceImg=document.getElementById("diceImg");
 
 choices.forEach(c=>{
-  c.onclick = ()=>{
+  c.onclick=()=>{
     choices.forEach(x=>x.classList.remove("selected"));
     c.classList.add("selected");
-    selectedColor = c.dataset.color;
+    selectedColor=c.dataset.color;
   }
 });
 
-joinBtn.onclick = ()=>{
-  if(!nameInput.value || !selectedColor){
+joinBtn.onclick=()=>{
+  if(!nameInput.value||!selectedColor){
     alert("Введите имя и выберите цвет");
     return;
   }
@@ -76,48 +72,52 @@ socket.on("init",data=>{
 });
 
 /*
-  ВАЖНО:
-  Координаты под твоё реальное поле
-  Движение: снизу вверх → вправо → вниз → влево
+  АВТОМАТИЧЕСКОЕ ДВИЖЕНИЕ ПО ПЕРИМЕТРУ
+  Работает под любую картинку
 */
 
-const positions = [
+function getPositions(){
 
-  // НИЖНИЙ ЛЕВЫЙ УГОЛ (СТАРТ)
-  {x:110,y:520}, // 0 START
+  const rect=board.getBoundingClientRect();
 
-  // ЛЕВАЯ СТОРОНА ВВЕРХ
-  {x:110,y:450},
-  {x:110,y:380},
-  {x:110,y:310},
-  {x:110,y:240},
+  const left=40;
+  const right=rect.width-70;
+  const top=40;
+  const bottom=rect.height-70;
 
-  // ВЕРХ ЛЕВО → ПРАВО
-  {x:200,y:170},
-  {x:290,y:170},
-  {x:380,y:170},
-  {x:470,y:170},
+  return [
 
-  // ПРАВАЯ СТОРОНА ВНИЗ
-  {x:560,y:240},
-  {x:560,y:310},
-  {x:560,y:380},
-  {x:560,y:450},
+    // СТАРТ (низ слева)
+    {x:left,y:bottom},
 
-  // НИЗ ПРАВО → ЛЕВО
-  {x:470,y:520},
-  {x:380,y:520},
-  {x:290,y:520},
-  {x:200,y:520},
+    // вверх
+    {x:left,y:bottom-100},
+    {x:left,y:bottom-200},
+    {x:left,y:bottom-300},
+    {x:left,y:top},
 
-  // ДО ЗАМЫКАНИЯ
-  {x:150,y:520},
-  {x:130,y:520},
-  {x:110,y:520}
-];
+    // вправо
+    {x:left+150,y:top},
+    {x:left+300,y:top},
+    {x:left+450,y:top},
+
+    // вниз
+    {x:right,y:top+100},
+    {x:right,y:top+200},
+    {x:right,y:top+300},
+    {x:right,y:bottom-100},
+
+    // влево
+    {x:right-150,y:bottom},
+    {x:right-300,y:bottom},
+    {x:right-450,y:bottom},
+
+    {x:left,y:bottom}
+  ];
+}
 
 function createToken(id,color){
-  let el = document.createElement("div");
+  let el=document.createElement("div");
   el.className="token";
   el.id="p"+id;
   el.style.background=color;
@@ -125,9 +125,10 @@ function createToken(id,color){
 }
 
 function moveToken(id,pos){
+  const positions=getPositions();
   let el=document.getElementById("p"+id);
   if(!el) return;
-  el.style.transform=`translate(${positions[pos].x}px,${positions[pos].y}px)`;
+  el.style.transform=`translate(${positions[pos%positions.length].x}px,${positions[pos%positions.length].y}px)`;
 }
 
 socket.on("updatePlayers",players=>{
@@ -147,15 +148,13 @@ rollBtn.onclick=()=>{
 };
 
 socket.on("diceResult",num=>{
-  let i=0;
-  let anim=setInterval(()=>{
-    dice.innerHTML=Math.floor(Math.random()*6)+1;
-    i++;
-    if(i>10){
-      clearInterval(anim);
-      dice.innerHTML=num;
-    }
-  },100);
+  diceImg.src=`https://upload.wikimedia.org/wikipedia/commons/${[
+  "1/1b/Dice-1-b.svg",
+  "5/5f/Dice-2-b.svg",
+  "b/b1/Dice-3-b.svg",
+  "f/fd/Dice-4-b.svg",
+  "0/08/Dice-5-b.svg",
+  "2/26/Dice-6-b.svg"][num-1]}`;
 });
 </script>
 </body>
