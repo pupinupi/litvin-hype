@@ -2,14 +2,13 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Litvin Hype ULTIMATE</title>
+<title>Litvin Hype Ultimate</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div id="start">
 <h2>Litvin Hype</h2>
-
 <input id="nameInput" placeholder="Имя">
 <input id="roomInput" placeholder="Код комнаты">
 
@@ -27,37 +26,13 @@
 <div id="board">
 <img src="board.jpg" id="boardImg">
 <div id="tokens"></div>
-<div id="highlight"></div>
 </div>
 
 <div id="diceSection">
-<div id="dice3d">
-<div class="cube" id="cube">
-<div class="face front">⚀</div>
-<div class="face back">⚅</div>
-<div class="face right">⚂</div>
-<div class="face left">⚃</div>
-<div class="face top">⚁</div>
-<div class="face bottom">⚄</div>
-
-<div class="face front">1</div>
-<div class="face back">6</div>
-<div class="face right">3</div>
-<div class="face left">4</div>
-<div class="face top">2</div>
-<div class="face bottom">5</div>
-</div>
-</div>
+<div id="dice">⚀</div>
 <button id="rollBtn">Бросить</button>
 </div>
-<div class="cube" id="cube">
-<div class="face front">⚀</div>
-<div class="face back">⚅</div>
-<div class="face right">⚂</div>
-<div class="face left">⚃</div>
-<div class="face top">⚁</div>
-<div class="face bottom">⚄</div>
-</div>
+
 <div id="info"></div>
 </div>
 
@@ -68,9 +43,10 @@
 
 const socket = io();
 
+let state = null;
+let previousState = null;
 let myRoom = null;
 let selectedColor = null;
-let state = null;
 let animating = false;
 
 const positions = [
@@ -80,59 +56,87 @@ const positions = [
 { x:776,y:610},{ x:644,y:602},{ x:514,y:602},{ x:365,y:599},{ x:224,y:605}
 ];
 
-const startScreen = document.getElementById("start");
-const gameScreen = document.getElementById("game");
-const nameInput = document.getElementById("nameInput");
-const roomInput = document.getElementById("roomInput");
-const joinBtn = document.getElementById("joinBtn");
-const rollBtn = document.getElementById("rollBtn");
-const infoBox = document.getElementById("info");
-const modal = document.getElementById("modal");
-
-// выбор цвета
 document.querySelectorAll(".choice").forEach(c=>{
-  c.onclick = ()=>{
+  c.onclick=()=>{
     document.querySelectorAll(".choice").forEach(x=>x.classList.remove("sel"));
     c.classList.add("sel");
-    selectedColor = c.getAttribute("data-color");
+    selectedColor=c.dataset.color;
   };
 });
 
-// вход
-joinBtn.onclick = ()=>{
-  const nameVal = nameInput.value.trim();
-  const roomVal = roomInput.value.trim();
+joinBtn.onclick=()=>{
+  const name=nameInput.value.trim();
+  const room=roomInput.value.trim();
+  if(!name||!room||!selectedColor){alert("Заполните всё");return;}
+  myRoom=room;
+  socket.emit("joinRoom",{name,room,color:selectedColor});
+  start.style.display="none";
+  game.style.display="block";
+};
 
-  if(!nameVal || !roomVal || !selectedColor){
-    alert("Заполните всё");
+socket.on("roll",num=>{
+  const diceFaces=["⚀","⚁","⚂","⚃","⚄","⚅"];
+  document.getElementById("dice").innerText=diceFaces[num-1];
+});
+
+socket.on("state",newState=>{
+
+  if(!previousState){
+    previousState=JSON.parse(JSON.stringify(newState));
+    state=newState;
+    render();
     return;
   }
 
-  myRoom = roomVal;
+  const moving=newState.players.find((p,i)=>
+    p.position!==previousState.players[i].position
+  );
 
-  socket.emit("joinRoom",{
-    name: nameVal,
-    room: roomVal,
-    color: selectedColor
-  });
+  state=newState;
 
-  startScreen.style.display="none";
-  gameScreen.style.display="block";
-};
+  if(moving){
+    animateMove(
+      previousState.players.find(p=>p.id===moving.id).position,
+      moving.position,
+      moving.id
+    );
+  } else render();
 
-socket.on("state", s=>{
-  state = s;
-  render();
+  previousState=JSON.parse(JSON.stringify(newState));
 });
+
+function animateMove(from,to,id){
+
+  animating=true;
+  let current=from;
+
+  function step(){
+    if(current===to){
+      animating=false;
+      render();
+      return;
+    }
+
+    current=(current+1)%20;
+    state.players.find(p=>p.id===id).position=current;
+    render();
+    setTimeout(step,250);
+  }
+
+  step();
+}
 
 function render(){
 
-  const layer = document.getElementById("tokens");
+  const layer=document.getElementById("tokens");
   layer.innerHTML="";
 
   state.players.forEach(p=>{
     const token=document.createElement("div");
     token.className="token";
+    if(p.id===state.players[state.turn].id)
+      token.classList.add("active");
+
     token.style.background=p.color;
     token.style.transform=`translate(${positions[p.position].x}px,${positions[p.position].y}px)`;
     layer.appendChild(token);
@@ -143,58 +147,10 @@ function render(){
     html+=`<div><span style="color:${p.color}">${p.name}</span> — ${p.hype} хайп</div>`;
   });
 
-  const current=state.players[state.turn];
-  html+=`<hr>Ходит: ${current.name}`;
+  info.innerHTML=html;
 
-  infoBox.innerHTML=html;
-
-  rollBtn.disabled=(current.id!==socket.id)||animating;
+  rollBtn.disabled=animating||state.players[state.turn].id!==socket.id;
 }
-
-// кубик
-function rotateCube(num){
-  const cube=document.getElementById("cube");
-  const map={
-    1:"rotateX(0deg) rotateY(0deg)",
-    2:"rotateX(-90deg)",
-    3:"rotateY(-90deg)",
-    4:"rotateY(90deg)",
-    5:"rotateX(90deg)",
-    6:"rotateX(180deg)"
-  };
-  cube.style.transform=map[num];
-}
-
-rollBtn.onclick=()=>{
-  socket.emit("rollDice", myRoom);
-};
-
-socket.on("roll", num=>{
-  rotateCube(num);
-});
-
-// скандал
-socket.on("scandal", text=>{
-  modal.innerHTML=`
-    <div class="modalBox">
-      <h2>СКАНДАЛ</h2>
-      <p>${text}</p>
-      <button onclick="document.getElementById('modal').style.display='none'">ОК</button>
-    </div>
-  `;
-  modal.style.display="flex";
-});
-
-// победа
-socket.on("winner", name=>{
-  modal.innerHTML=`
-    <div class="modalBox">
-      <h1>${name} победил! 🏆</h1>
-      <button onclick="location.reload()">Играть снова</button>
-    </div>
-  `;
-  modal.style.display="flex";
-});
 
 </script>
 </body>
