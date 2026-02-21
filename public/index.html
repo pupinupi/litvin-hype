@@ -7,111 +7,196 @@
 </head>
 <body>
 
-<div id="startScreen">
-  <h2>Litvin Hype</h2>
-  <input id="nameInput" placeholder="Имя">
+<div id="gameScreen">
 
-  <div id="colors">
-    <div class="choice" data-color="red" style="background:red;"></div>
-    <div class="choice" data-color="blue" style="background:blue;"></div>
-    <div class="choice" data-color="green" style="background:green;"></div>
-    <div class="choice" data-color="yellow" style="background:yellow;"></div>
-  </div>
-
-  <button id="joinBtn">Играть</button>
-</div>
-
-<div id="gameScreen" style="display:none;">
   <div id="board">
+    <div id="cells"></div>
     <div id="tokenLayer"></div>
   </div>
 
   <div id="diceArea">
-    <img id="diceImg" src="https://upload.wikimedia.org/wikipedia/commons/1/1b/Dice-1-b.svg">
+    <img id="diceImg" src="dice1.png">
     <button id="rollBtn">Бросить кубик</button>
   </div>
 
   <div id="info">Хайп: 0</div>
+
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<!-- МОДАЛКА СКАНДАЛ -->
+<div id="scandalModal">
+  <div id="scandalContent">
+    <h3>СКАНДАЛ 🔥</h3>
+    <p id="scandalText"></p>
+    <button onclick="closeScandal()">ОК</button>
+  </div>
+</div>
+
 <script>
-const socket = io();
-let myId=null;
-let selectedColor=null;
+const board = document.getElementById("board");
+const tokenLayer = document.getElementById("tokenLayer");
+const rollBtn = document.getElementById("rollBtn");
+const diceImg = document.getElementById("diceImg");
+const info = document.getElementById("info");
 
-const board=document.getElementById("board");
-const tokenLayer=document.getElementById("tokenLayer");
-const diceImg=document.getElementById("diceImg");
-const rollBtn=document.getElementById("rollBtn");
-const info=document.getElementById("info");
+let position = 0;
+let hype = 0;
+let canRoll = true;
 
-document.querySelectorAll(".choice").forEach(c=>{
-  c.onclick=()=>{
-    document.querySelectorAll(".choice").forEach(x=>x.classList.remove("selected"));
-    c.classList.add("selected");
-    selectedColor=c.dataset.color;
-  }
-});
-
-document.getElementById("joinBtn").onclick=()=>{
-  const name=document.getElementById("nameInput").value;
-  if(!name||!selectedColor){
-    alert("Введите имя и выберите цвет");
-    return;
-  }
-  socket.emit("joinGame",{name:name,color:selectedColor});
-  document.getElementById("startScreen").style.display="none";
-  document.getElementById("gameScreen").style.display="block";
-};
-
-socket.on("init",data=>{
-  myId=data.id;
-});
-
-// пиксельные координаты клеток
-const positions=[
-  {x:113, y:588},{x:108, y:464},{x:108, y:345},{x:108, y:235},{x:108, y:135},
-  {x:232, y:83},{x:359, y:88},{x:511, y:91},{x:660, y:88},{x:798, y:88},
-  {x:920, y:119},{x:903, y:243},{x:901, y:351},{x:895, y:461},{x:895, y:580},
-  {x:776, y:610},{x:644, y:602},{x:514, y:602},{x:365, y:599},{x:224, y:605}
+const scandalCards = [
+ "-1 хайп",
+ "-2 хайп",
+ "-3 хайп",
+ "-4 хайп",
+ "-5 хайп",
+ "-5 хайп, пропусти ход"
 ];
 
-function createToken(id,color){
-  let el=document.createElement("div");
-  el.className="token";
-  el.id="p"+id;
-  el.style.background=color;
-  tokenLayer.appendChild(el);
+// клетки по порядку
+const cellTypes = [
+"start","+3","+2","scandal","risk","+2","scandal","+3","+5","zero",
+"half","+3","risk","+3","skip","+2","scandal","+8","zero","+4"
+];
+
+// координаты
+const positions = [
+{ x:113,y:588},{ x:108,y:464},{ x:108,y:345},{ x:108,y:235},{ x:108,y:135},
+{ x:232,y:83},{ x:359,y:88},{ x:511,y:91},{ x:660,y:88},{ x:798,y:88},
+{ x:920,y:119},{ x:903,y:243},{ x:901,y:351},{ x:895,y:461},{ x:895,y:580},
+{ x:776,y:610},{ x:644,y:602},{ x:514,y:602},{ x:365,y:599},{ x:224,y:605}
+];
+
+// создаем фишку
+const token = document.createElement("div");
+token.className="token";
+token.style.background="red";
+tokenLayer.appendChild(token);
+
+moveToken(0);
+
+rollBtn.onclick = ()=>{
+ if(!canRoll) return;
+ rollDice();
+};
+
+function rollDice(){
+ canRoll=false;
+
+ let roll = Math.floor(Math.random()*6)+1;
+ animateDice(roll);
+ animateMove(roll);
 }
 
-function moveToken(id,pos){
-  let el=document.getElementById("p"+id);
-  if(!el) return;
-  const p=positions[pos%20];
-  el.style.transform=`translate(${p.x}px,${p.y}px)`;
+function animateDice(num){
+ diceImg.classList.add("spin");
+ setTimeout(()=>{
+   diceImg.src="dice"+num+".png";
+   diceImg.classList.remove("spin");
+ },800);
 }
 
-socket.on("updatePlayers",players=>{
-  players.forEach(p=>{
-    if(!document.getElementById("p"+p.id)) createToken(p.id,p.color);
-    moveToken(p.id,p.position);
-    if(p.id===myId) info.innerHTML="Хайп: "+p.hype;
-  });
-});
+function animateMove(steps){
+ let i=0;
+ let interval=setInterval(()=>{
+   position=(position+1)%20;
+   moveToken(position);
+   highlight(position);
+   i++;
+   if(i>=steps){
+     clearInterval(interval);
+     setTimeout(()=>{
+       applyCellEffect();
+     },300);
+   }
+ },300);
+}
 
-rollBtn.onclick=()=>{ socket.emit("rollDice"); }
+function moveToken(pos){
+ const p=positions[pos];
+ token.style.transform=`translate(${p.x}px,${p.y}px)`;
+}
 
-socket.on("diceResult",num=>{
-  diceImg.src="https://upload.wikimedia.org/wikipedia/commons/"+[
-    "1/1b/Dice-1-b.svg",
-    "5/5f/Dice-2-b.svg",
-    "b/b1/Dice-3-b.svg",
-    "f/fd/Dice-4-b.svg",
-    "0/08/Dice-5-b.svg",
-    "2/26/Dice-6-b.svg"
-  ][num-1];
-});
+function highlight(pos){
+ document.querySelectorAll(".cellHighlight").forEach(c=>c.remove());
+ const hl=document.createElement("div");
+ hl.className="cellHighlight";
+ hl.style.left=positions[pos].x+"px";
+ hl.style.top=positions[pos].y+"px";
+ board.appendChild(hl);
+}
+
+function applyCellEffect(){
+ let type = cellTypes[position];
+
+ if(type.startsWith("+")){
+   let value=parseInt(type.replace("+",""));
+   addHype(value);
+ }
+
+ if(type==="zero"){
+   hype=0;
+ }
+
+ if(type==="half"){
+   hype=Math.floor(hype/2);
+ }
+
+ if(type==="scandal"){
+   showScandal();
+   return;
+ }
+
+ if(type==="risk"){
+   riskRoll();
+   return;
+ }
+
+ updateInfo();
+ canRoll=true;
+}
+
+function addHype(v){
+ hype+=v;
+}
+
+function updateInfo(){
+ info.innerHTML="Хайп: "+hype;
+}
+
+function showScandal(){
+ const card=scandalCards[Math.floor(Math.random()*scandalCards.length)];
+ document.getElementById("scandalText").innerText=card;
+ document.getElementById("scandalModal").style.display="flex";
+
+ let minus=parseInt(card);
+ if(!isNaN(minus)){
+   hype+=minus;
+   if(hype<0) hype=0;
+ }
+ updateInfo();
+}
+
+function closeScandal(){
+ document.getElementById("scandalModal").style.display="none";
+ canRoll=true;
+}
+
+function riskRoll(){
+ let roll=Math.floor(Math.random()*6)+1;
+ animateDice(roll);
+
+ setTimeout(()=>{
+   if(roll<=3){
+     hype-=5;
+   }else{
+     hype+=5;
+   }
+   if(hype<0) hype=0;
+   updateInfo();
+   canRoll=true;
+ },1000);
+}
 </script>
+
 </body>
 </html>
