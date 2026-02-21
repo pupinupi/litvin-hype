@@ -7,58 +7,47 @@
 </head>
 <body>
 
-<div id="gameScreen">
+<div id="startScreen">
+  <h2>Litvin Hype</h2>
+  <input id="nameInput" placeholder="Имя">
+  <input id="roomInput" placeholder="Код комнаты">
 
+  <div id="colors">
+    <div class="choice" data-color="red" style="background:red;"></div>
+    <div class="choice" data-color="blue" style="background:blue;"></div>
+    <div class="choice" data-color="green" style="background:green;"></div>
+    <div class="choice" data-color="yellow" style="background:yellow;"></div>
+  </div>
+
+  <button id="joinBtn">Войти</button>
+</div>
+
+<div id="gameScreen">
   <div id="board">
-    <div id="cells"></div>
     <div id="tokenLayer"></div>
   </div>
 
   <div id="diceArea">
-    <img id="diceImg" src="dice1.png">
+    <div id="diceDisplay">🎲</div>
     <button id="rollBtn">Бросить кубик</button>
   </div>
 
-  <div id="info">Хайп: 0</div>
-
+  <div id="info"></div>
 </div>
 
-<!-- МОДАЛКА СКАНДАЛ -->
-<div id="scandalModal">
-  <div id="scandalContent">
-    <h3>СКАНДАЛ 🔥</h3>
-    <p id="scandalText"></p>
-    <button onclick="closeScandal()">ОК</button>
+<div id="winnerModal">
+  <div class="modalBox">
+    <h2 id="winnerText"></h2>
   </div>
 </div>
 
+<script src="/socket.io/socket.io.js"></script>
 <script>
-const board = document.getElementById("board");
-const tokenLayer = document.getElementById("tokenLayer");
-const rollBtn = document.getElementById("rollBtn");
-const diceImg = document.getElementById("diceImg");
-const info = document.getElementById("info");
+const socket = io();
+let myRoom;
+let selectedColor;
+let currentState;
 
-let position = 0;
-let hype = 0;
-let canRoll = true;
-
-const scandalCards = [
- "-1 хайп",
- "-2 хайп",
- "-3 хайп",
- "-4 хайп",
- "-5 хайп",
- "-5 хайп, пропусти ход"
-];
-
-// клетки по порядку
-const cellTypes = [
-"start","+3","+2","scandal","risk","+2","scandal","+3","+5","zero",
-"half","+3","risk","+3","skip","+2","scandal","+8","zero","+4"
-];
-
-// координаты
 const positions = [
 { x:113,y:588},{ x:108,y:464},{ x:108,y:345},{ x:108,y:235},{ x:108,y:135},
 { x:232,y:83},{ x:359,y:88},{ x:511,y:91},{ x:660,y:88},{ x:798,y:88},
@@ -66,136 +55,60 @@ const positions = [
 { x:776,y:610},{ x:644,y:602},{ x:514,y:602},{ x:365,y:599},{ x:224,y:605}
 ];
 
-// создаем фишку
-const token = document.createElement("div");
-token.className="token";
-token.style.background="red";
-tokenLayer.appendChild(token);
+document.querySelectorAll(".choice").forEach(c=>{
+  c.onclick=()=>{
+    document.querySelectorAll(".choice").forEach(x=>x.classList.remove("selected"));
+    c.classList.add("selected");
+    selectedColor=c.dataset.color;
+  };
+});
 
-moveToken(0);
+document.getElementById("joinBtn").onclick=()=>{
+  const name=document.getElementById("nameInput").value;
+  const room=document.getElementById("roomInput").value;
 
-rollBtn.onclick = ()=>{
- if(!canRoll) return;
- rollDice();
+  if(!name||!room||!selectedColor){ alert("Заполните всё"); return; }
+
+  myRoom=room;
+  socket.emit("joinRoom",{name,room,color:selectedColor});
+
+  startScreen.style.display="none";
+  gameScreen.style.display="block";
 };
 
-function rollDice(){
- canRoll=false;
+socket.on("updateState",state=>{
+  currentState=state;
+  render();
+});
 
- let roll = Math.floor(Math.random()*6)+1;
- animateDice(roll);
- animateMove(roll);
+socket.on("diceResult",num=>{
+  document.getElementById("diceDisplay").innerHTML="🎲 "+num;
+});
+
+socket.on("winner",name=>{
+  winnerModal.style.display="flex";
+  winnerText.innerText=name+" победил!";
+});
+
+function render(){
+  const layer=document.getElementById("tokenLayer");
+  layer.innerHTML="";
+
+  currentState.players.forEach((p,i)=>{
+    const token=document.createElement("div");
+    token.className="token";
+    token.style.background=p.color;
+    token.style.transform=`translate(${positions[p.position].x}px,${positions[p.position].y}px)`;
+    layer.appendChild(token);
+  });
+
+  const current=currentState.players[currentState.turn];
+  info.innerHTML="Ходит: "+current.name;
 }
 
-function animateDice(num){
- diceImg.classList.add("spin");
- setTimeout(()=>{
-   diceImg.src="dice"+num+".png";
-   diceImg.classList.remove("spin");
- },800);
-}
-
-function animateMove(steps){
- let i=0;
- let interval=setInterval(()=>{
-   position=(position+1)%20;
-   moveToken(position);
-   highlight(position);
-   i++;
-   if(i>=steps){
-     clearInterval(interval);
-     setTimeout(()=>{
-       applyCellEffect();
-     },300);
-   }
- },300);
-}
-
-function moveToken(pos){
- const p=positions[pos];
- token.style.transform=`translate(${p.x}px,${p.y}px)`;
-}
-
-function highlight(pos){
- document.querySelectorAll(".cellHighlight").forEach(c=>c.remove());
- const hl=document.createElement("div");
- hl.className="cellHighlight";
- hl.style.left=positions[pos].x+"px";
- hl.style.top=positions[pos].y+"px";
- board.appendChild(hl);
-}
-
-function applyCellEffect(){
- let type = cellTypes[position];
-
- if(type.startsWith("+")){
-   let value=parseInt(type.replace("+",""));
-   addHype(value);
- }
-
- if(type==="zero"){
-   hype=0;
- }
-
- if(type==="half"){
-   hype=Math.floor(hype/2);
- }
-
- if(type==="scandal"){
-   showScandal();
-   return;
- }
-
- if(type==="risk"){
-   riskRoll();
-   return;
- }
-
- updateInfo();
- canRoll=true;
-}
-
-function addHype(v){
- hype+=v;
-}
-
-function updateInfo(){
- info.innerHTML="Хайп: "+hype;
-}
-
-function showScandal(){
- const card=scandalCards[Math.floor(Math.random()*scandalCards.length)];
- document.getElementById("scandalText").innerText=card;
- document.getElementById("scandalModal").style.display="flex";
-
- let minus=parseInt(card);
- if(!isNaN(minus)){
-   hype+=minus;
-   if(hype<0) hype=0;
- }
- updateInfo();
-}
-
-function closeScandal(){
- document.getElementById("scandalModal").style.display="none";
- canRoll=true;
-}
-
-function riskRoll(){
- let roll=Math.floor(Math.random()*6)+1;
- animateDice(roll);
-
- setTimeout(()=>{
-   if(roll<=3){
-     hype-=5;
-   }else{
-     hype+=5;
-   }
-   if(hype<0) hype=0;
-   updateInfo();
-   canRoll=true;
- },1000);
-}
+document.getElementById("rollBtn").onclick=()=>{
+  socket.emit("rollDice",myRoom);
+};
 </script>
 
 </body>
