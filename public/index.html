@@ -32,76 +32,74 @@
 
 <div id="popup"></div>
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="/socket.io/socket.io.js"></<script>
 
-<script>
-const socket=io();
-let room="";
-let color=null;
-let positions=[];
-const board=document.getElementById("board");
+  const socket = io();
 
-function build(){
-  const size=board.offsetWidth;
-  const m=size*0.08;
-  const s=(size-m*2)/4;
-  positions=[];
-  for(let i=0;i<5;i++) positions.push({x:m,y:size-m-i*s});
-  for(let i=1;i<5;i++) positions.push({x:m+i*s,y:m});
-  for(let i=4;i>=0;i--) positions.push({x:size-m,y:m+(4-i)*s});
-  for(let i=4;i>0;i--) positions.push({x:m+(i-1)*s,y:size-m});
+let myId = null;
+let myColor = null;
+
+const board = document.getElementById("board");
+const diceBtn = document.getElementById("rollBtn");
+const diceBox = document.getElementById("diceBox");
+
+const cellPositions = [
+  {x:60,y:540},{x:60,y:480},{x:60,y:420},{x:60,y:360},{x:60,y:300},
+  {x:60,y:240},{x:60,y:180},{x:60,y:120},{x:60,y:60},{x:120,y:60},
+  {x:180,y:60},{x:240,y:60},{x:300,y:60},{x:360,y:60},{x:420,y:60},
+  {x:480,y:60},{x:540,y:60},{x:540,y:120},{x:540,y:180},{x:540,y:240}
+];
+
+function createToken(id,color){
+  let el = document.createElement("div");
+  el.className = "token";
+  el.id = "player-"+id;
+  el.style.background = color;
+  board.appendChild(el);
 }
 
-window.onload=build;
-window.onresize=build;
+function moveToken(id,pos){
+  let el = document.getElementById("player-"+id);
+  if(!el) return;
+  let p = cellPositions[pos];
+  el.style.transform = `translate(${p.x}px,${p.y}px)`;
+}
 
-document.querySelectorAll(".choice").forEach(el=>{
-  el.onclick=()=>{
-    document.querySelectorAll(".choice")
-      .forEach(c=>c.style.outline="none");
-    el.style.outline="3px solid white";
-    color=el.dataset.color;
-  };
+socket.on("init", data=>{
+  myId = data.id;
+  myColor = data.color;
+  createToken(myId,myColor);
+  moveToken(myId,0);
 });
 
-function enter(){
-  const name=document.getElementById("name").value;
-  room=document.getElementById("room").value;
-  if(!name||!room||!color) return alert("Заполни всё");
-  socket.emit("joinRoom",{name,room,color});
-  document.getElementById("start").style.display="none";
-  document.getElementById("game").style.display="block";
-}
+socket.on("updatePlayers", players=>{
+  players.forEach(p=>{
+    if(!document.getElementById("player-"+p.id)){
+      createToken(p.id,p.color);
+    }
+    moveToken(p.id,p.position);
+  });
+});
 
-document.getElementById("dice").onclick=()=>{
-  socket.emit("rollDice",room);
+diceBtn.onclick = ()=>{
+  socket.emit("rollDice");
 };
 
-socket.on("dice",d=>{
-  document.getElementById("dice").innerText=d;
+socket.on("diceResult", num=>{
+  animateDice(num);
 });
 
-socket.on("update",data=>{
-  document.querySelectorAll(".token").forEach(t=>t.remove());
-  data.players.forEach(p=>{
-    const t=document.createElement("div");
-    t.className="token";
-    t.style.background=p.color;
-    t.style.left=positions[p.position].x+"px";
-    t.style.top=positions[p.position].y+"px";
-    board.appendChild(t);
-  });
-  document.getElementById("info").innerHTML=
-    data.players.map(p=>p.name+": "+p.hype+" хайпа").join("<br>");
-});
-
-socket.on("scandal",txt=>{
-  const p=document.getElementById("popup");
-  p.innerText="СКАНДАЛ: "+txt;
-  p.style.display="block";
-  setTimeout(()=>p.style.display="none",2000);
-});
+function animateDice(num){
+  let count = 0;
+  let interval = setInterval(()=>{
+    diceBox.innerHTML = Math.floor(Math.random()*6)+1;
+    count++;
+    if(count>10){
+      clearInterval(interval);
+      diceBox.innerHTML = num;
+    }
+  },100);
+}
 </script>
-
 </body>
 </html>
