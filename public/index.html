@@ -2,48 +2,71 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Литвин. Путь к хайпу</title>
+<title>Litvin Hype</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div id="start">
-  <h2>Литвин. Путь к хайпу</h2>
-  <input id="name" placeholder="Имя"><br>
-  <input id="room" placeholder="Код комнаты"><br>
+<div id="startScreen">
+  <h2>Вход в игру</h2>
+  <input id="nameInput" placeholder="Имя">
 
-  <div>
-    <div class="choice" data-color="red" style="background:red"></div>
-    <div class="choice" data-color="blue" style="background:blue"></div>
-    <div class="choice" data-color="green" style="background:green"></div>
-    <div class="choice" data-color="yellow" style="background:yellow"></div>
+  <div id="colors">
+    <div class="choice" data-color="red" style="background:red;"></div>
+    <div class="choice" data-color="blue" style="background:blue;"></div>
+    <div class="choice" data-color="green" style="background:green;"></div>
+    <div class="choice" data-color="yellow" style="background:yellow;"></div>
   </div>
 
-  <button onclick="enter()">Войти</button>
+  <button id="joinBtn">Играть</button>
 </div>
 
-<div id="game" style="display:none">
+<div id="gameScreen" style="display:none;">
   <div id="board">
-    <img src="board.jpg" class="board-img">
+    <div id="diceArea">
+      <div id="dice">🎲</div>
+      <button id="rollBtn">Бросить</button>
+    </div>
   </div>
-  <div id="dice">🎲</div>
   <div id="info"></div>
 </div>
 
-<div id="popup"></div>
-
-<script src="/socket.io/socket.io.js"></<script>
-
-  const socket = io();
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
 
 let myId = null;
-let myColor = null;
+let selectedColor = null;
 
+const startScreen = document.getElementById("startScreen");
+const gameScreen = document.getElementById("gameScreen");
+const joinBtn = document.getElementById("joinBtn");
+const nameInput = document.getElementById("nameInput");
+const choices = document.querySelectorAll(".choice");
 const board = document.getElementById("board");
-const diceBtn = document.getElementById("rollBtn");
-const diceBox = document.getElementById("diceBox");
+const dice = document.getElementById("dice");
+const rollBtn = document.getElementById("rollBtn");
+const info = document.getElementById("info");
 
-const cellPositions = [
+choices.forEach(c=>{
+  c.onclick = ()=>{
+    choices.forEach(x=>x.classList.remove("selected"));
+    c.classList.add("selected");
+    selectedColor = c.dataset.color;
+  }
+});
+
+joinBtn.onclick = ()=>{
+  if(!nameInput.value || !selectedColor){
+    alert("Введите имя и выберите цвет");
+    return;
+  }
+  socket.emit("joinGame",{name:nameInput.value,color:selectedColor});
+  startScreen.style.display="none";
+  gameScreen.style.display="block";
+};
+
+const positions = [
   {x:60,y:540},{x:60,y:480},{x:60,y:420},{x:60,y:360},{x:60,y:300},
   {x:60,y:240},{x:60,y:180},{x:60,y:120},{x:60,y:60},{x:120,y:60},
   {x:180,y:60},{x:240,y:60},{x:300,y:60},{x:360,y:60},{x:420,y:60},
@@ -52,54 +75,49 @@ const cellPositions = [
 
 function createToken(id,color){
   let el = document.createElement("div");
-  el.className = "token";
-  el.id = "player-"+id;
-  el.style.background = color;
+  el.className="token";
+  el.id="p"+id;
+  el.style.background=color;
   board.appendChild(el);
 }
 
 function moveToken(id,pos){
-  let el = document.getElementById("player-"+id);
+  let el=document.getElementById("p"+id);
   if(!el) return;
-  let p = cellPositions[pos];
-  el.style.transform = `translate(${p.x}px,${p.y}px)`;
+  el.style.transform=`translate(${positions[pos].x}px,${positions[pos].y}px)`;
 }
 
-socket.on("init", data=>{
-  myId = data.id;
-  myColor = data.color;
-  createToken(myId,myColor);
-  moveToken(myId,0);
+socket.on("init",data=>{
+  myId=data.id;
 });
 
-socket.on("updatePlayers", players=>{
+socket.on("updatePlayers",players=>{
   players.forEach(p=>{
-    if(!document.getElementById("player-"+p.id)){
+    if(!document.getElementById("p"+p.id)){
       createToken(p.id,p.color);
     }
     moveToken(p.id,p.position);
+    if(p.id===myId){
+      info.innerHTML="Хайп: "+p.hype;
+    }
   });
 });
 
-diceBtn.onclick = ()=>{
+rollBtn.onclick=()=>{
   socket.emit("rollDice");
 };
 
-socket.on("diceResult", num=>{
-  animateDice(num);
-});
-
-function animateDice(num){
-  let count = 0;
-  let interval = setInterval(()=>{
-    diceBox.innerHTML = Math.floor(Math.random()*6)+1;
-    count++;
-    if(count>10){
-      clearInterval(interval);
-      diceBox.innerHTML = num;
+socket.on("diceResult",num=>{
+  let i=0;
+  let anim=setInterval(()=>{
+    dice.innerHTML=Math.floor(Math.random()*6)+1;
+    i++;
+    if(i>10){
+      clearInterval(anim);
+      dice.innerHTML=num;
     }
   },100);
-}
+});
 </script>
 </body>
 </html>
