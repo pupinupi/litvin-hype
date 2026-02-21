@@ -1,72 +1,51 @@
 body{
   margin:0;
-  background:#111;
+  background:black;
   color:white;
-  text-align:center;
   font-family:Arial;
+  text-align:center;
 }
 
-#board {
-  position: relative;
-  width: 600px;
-  height: 600px;
-  background: url("board.jpg") no-repeat center;
-  background-size: contain;
-  margin: auto;
+#board{
+  position:relative;
+  width:600px;
+  height:600px;
+  margin:auto;
+  background:url("board.jpg") no-repeat center;
+  background-size:contain;
 }
 
-.board-img{
-  width:100%;
-  height:100%;
+.token{
+  width:28px;
+  height:28px;
+  border-radius:50%;
   position:absolute;
-}
-
-#board {
-  position: relative;
-  width: 600px;
-  height: 600px;
-  background: url("board.jpg") no-repeat center;
-  background-size: contain;
-  margin: auto;
+  transition:transform 0.4s ease;
+  border:2px solid white;
 }
 
 .choice{
-  width:30px;
-  height:30px;
-  border-radius:50%;
+  width:40px;
+  height:40px;
   display:inline-block;
-  margin:5px;
+  margin:10px;
+  border-radius:50%;
+  cursor:pointer;
+  border:3px solid transparent;
+}
+
+.choice.selected{
   border:3px solid white;
 }
 
-#dice{
-  font-size:60px;
-  cursor:pointer;
-  margin:20px;
-}
-
-#popup{
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:red;
-  padding:20px;
-  border-radius:10px;
-  display:none;
-}
-#diceContainer{
+#diceArea{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  text-align:center;
 }
 
-#diceBox{
+#dice{
   font-size:40px;
   margin-bottom:10px;
 }
-
-
-
