@@ -8,7 +8,7 @@
 <body>
 
 <div id="startScreen">
-  <h2>Вход</h2>
+  <h2>Litvin Hype</h2>
   <input id="nameInput" placeholder="Имя">
 
   <div id="colors">
@@ -22,11 +22,13 @@
 </div>
 
 <div id="gameScreen" style="display:none;">
-  <div id="board"></div>
+  <div id="board">
+    <div id="tokenLayer"></div>
+  </div>
 
   <div id="diceArea">
     <img id="diceImg" src="https://upload.wikimedia.org/wikipedia/commons/1/1b/Dice-1-b.svg">
-    <button id="rollBtn">Бросить</button>
+    <button id="rollBtn">Бросить кубик</button>
   </div>
 
   <div id="info">Хайп: 0</div>
@@ -35,126 +37,80 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
-
 let myId=null;
 let selectedColor=null;
 
-const startScreen=document.getElementById("startScreen");
-const gameScreen=document.getElementById("gameScreen");
-const joinBtn=document.getElementById("joinBtn");
-const nameInput=document.getElementById("nameInput");
-const choices=document.querySelectorAll(".choice");
 const board=document.getElementById("board");
+const tokenLayer=document.getElementById("tokenLayer");
+const diceImg=document.getElementById("diceImg");
 const rollBtn=document.getElementById("rollBtn");
 const info=document.getElementById("info");
-const diceImg=document.getElementById("diceImg");
 
-choices.forEach(c=>{
+document.querySelectorAll(".choice").forEach(c=>{
   c.onclick=()=>{
-    choices.forEach(x=>x.classList.remove("selected"));
+    document.querySelectorAll(".choice").forEach(x=>x.classList.remove("selected"));
     c.classList.add("selected");
     selectedColor=c.dataset.color;
   }
 });
 
-joinBtn.onclick=()=>{
-  if(!nameInput.value||!selectedColor){
+document.getElementById("joinBtn").onclick=()=>{
+  const name=document.getElementById("nameInput").value;
+  if(!name||!selectedColor){
     alert("Введите имя и выберите цвет");
     return;
   }
-  socket.emit("joinGame",{name:nameInput.value,color:selectedColor});
-  startScreen.style.display="none";
-  gameScreen.style.display="block";
+  socket.emit("joinGame",{name:name,color:selectedColor});
+  document.getElementById("startScreen").style.display="none";
+  document.getElementById("gameScreen").style.display="block";
 };
 
 socket.on("init",data=>{
   myId=data.id;
 });
 
-/*
-  АВТОМАТИЧЕСКОЕ ДВИЖЕНИЕ ПО ПЕРИМЕТРУ
-  Работает под любую картинку
-*/
-
-function getPositions(){
-
-  const rect=board.getBoundingClientRect();
-
-  const left=40;
-  const right=rect.width-70;
-  const top=40;
-  const bottom=rect.height-70;
-
-  return [
-
-    // СТАРТ (низ слева)
-    {x:left,y:bottom},
-
-    // вверх
-    {x:left,y:bottom-100},
-    {x:left,y:bottom-200},
-    {x:left,y:bottom-300},
-    {x:left,y:top},
-
-    // вправо
-    {x:left+150,y:top},
-    {x:left+300,y:top},
-    {x:left+450,y:top},
-
-    // вниз
-    {x:right,y:top+100},
-    {x:right,y:top+200},
-    {x:right,y:top+300},
-    {x:right,y:bottom-100},
-
-    // влево
-    {x:right-150,y:bottom},
-    {x:right-300,y:bottom},
-    {x:right-450,y:bottom},
-
-    {x:left,y:bottom}
-  ];
-}
+// пиксельные координаты клеток
+const positions=[
+  {x:113, y:588},{x:108, y:464},{x:108, y:345},{x:108, y:235},{x:108, y:135},
+  {x:232, y:83},{x:359, y:88},{x:511, y:91},{x:660, y:88},{x:798, y:88},
+  {x:920, y:119},{x:903, y:243},{x:901, y:351},{x:895, y:461},{x:895, y:580},
+  {x:776, y:610},{x:644, y:602},{x:514, y:602},{x:365, y:599},{x:224, y:605}
+];
 
 function createToken(id,color){
   let el=document.createElement("div");
   el.className="token";
   el.id="p"+id;
   el.style.background=color;
-  board.appendChild(el);
+  tokenLayer.appendChild(el);
 }
 
 function moveToken(id,pos){
-  const positions=getPositions();
   let el=document.getElementById("p"+id);
   if(!el) return;
-  el.style.transform=`translate(${positions[pos%positions.length].x}px,${positions[pos%positions.length].y}px)`;
+  const p=positions[pos%20];
+  el.style.transform=`translate(${p.x}px,${p.y}px)`;
 }
 
 socket.on("updatePlayers",players=>{
   players.forEach(p=>{
-    if(!document.getElementById("p"+p.id)){
-      createToken(p.id,p.color);
-    }
+    if(!document.getElementById("p"+p.id)) createToken(p.id,p.color);
     moveToken(p.id,p.position);
-    if(p.id===myId){
-      info.innerHTML="Хайп: "+p.hype;
-    }
+    if(p.id===myId) info.innerHTML="Хайп: "+p.hype;
   });
 });
 
-rollBtn.onclick=()=>{
-  socket.emit("rollDice");
-};
+rollBtn.onclick=()=>{ socket.emit("rollDice"); }
 
 socket.on("diceResult",num=>{
-  diceImg.src=`https://upload.wikimedia.org/wikipedia/commons/${[
-  "1/1b/Dice-1-b.svg",
-  "5/5f/Dice-2-b.svg",
-  "b/b1/Dice-3-b.svg",
-  "f/fd/Dice-4-b.svg",
-  "0/08/Dice-5-b.svg",
-  "2/26/Dice-6-b.svg"][num-1]}`;
+  diceImg.src="https://upload.wikimedia.org/wikipedia/commons/"+[
+    "1/1b/Dice-1-b.svg",
+    "5/5f/Dice-2-b.svg",
+    "b/b1/Dice-3-b.svg",
+    "f/fd/Dice-4-b.svg",
+    "0/08/Dice-5-b.svg",
+    "2/26/Dice-6-b.svg"
+  ][num-1];
 });
 </script>
 </body>
