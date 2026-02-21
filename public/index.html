@@ -91,6 +91,7 @@ socket.on("state",s=>{
 
 // отображение игроков
 function render(){
+
   const layer=document.getElementById("tokens");
   layer.innerHTML="";
 
@@ -102,13 +103,28 @@ function render(){
     layer.appendChild(token);
   });
 
+  // 🔥 ВЫВОДИМ ХАЙП ВСЕХ ИГРОКОВ
+  let infoHTML = "<h3>Игроки:</h3>";
+
+  state.players.forEach(p=>{
+    infoHTML += `
+      <div>
+        <span style="color:${p.color};font-weight:bold;">
+          ${p.name}
+        </span>
+        — ${p.hype} хайп
+      </div>
+    `;
+  });
+
   const current=state.players[state.turn];
-  document.getElementById("info").innerHTML=
-    "Ходит: "+current.name;
+
+  infoHTML += `<hr>Ходит: ${current.name}`;
+
+  document.getElementById("info").innerHTML = infoHTML;
 
   rollBtn.disabled=(current.id!==socket.id);
 }
-
 // бросок
 rollBtn.onclick=()=>{
   socket.emit("rollDice",myRoom);
