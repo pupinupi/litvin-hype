@@ -6,11 +6,15 @@ body{
   text-align:center;
 }
 
+#boardWrapper{
+  display:flex;
+  justify-content:center;
+}
+
 #board{
   position:relative;
-  width:600px;
+  width:700px;
   height:600px;
-  margin:auto;
   background:url("board.jpg") no-repeat center;
   background-size:contain;
 }
@@ -21,7 +25,7 @@ body{
   border-radius:50%;
   position:absolute;
   transition:transform 0.4s ease;
-  border:2px solid white;
+  border:3px solid white;
 }
 
 .choice{
@@ -39,13 +43,10 @@ body{
 }
 
 #diceArea{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
+  margin-top:20px;
 }
 
 #dice{
-  font-size:40px;
+  font-size:50px;
   margin-bottom:10px;
 }
