@@ -24,9 +24,18 @@
 </div>
 
 <div id="gameScreen" style="display:none;">
-<h3>Игра</h3>
-<div id="info"></div>
+
+<div id="boardWrapper">
+<div id="board"></div>
+</div>
+
+<div id="diceSection">
+<img id="diceImg" src="dice1.png">
 <button id="rollBtn">Бросить кубик</button>
+</div>
+
+<div id="playersInfo"></div>
+
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -37,6 +46,31 @@ const socket = io();
 let selectedColor = null;
 let myRoom = null;
 let state = null;
+let myId = null;
+let animating = false;
+
+const CELL_COORDS = [
+{left:80, top:900},  // 1 старт
+{left:80, top:760},
+{left:80, top:620},
+{left:80, top:480},
+{left:80, top:340},
+{left:200, top:200},
+{left:350, top:200},
+{left:500, top:200},
+{left:650, top:200},
+{left:800, top:340},
+{left:800, top:480},
+{left:800, top:620},
+{left:800, top:760},
+{left:800, top:900},
+{left:650, top:950},
+{left:500, top:950},
+{left:350, top:950},
+{left:200, top:950},
+{left:120, top:900},
+{left:200, top:900}
+];
 
 const nameInput = document.getElementById("nameInput");
 const roomInput = document.getElementById("roomInput");
@@ -44,7 +78,9 @@ const joinBtn = document.getElementById("joinBtn");
 const startScreen = document.getElementById("startScreen");
 const gameScreen = document.getElementById("gameScreen");
 const rollBtn = document.getElementById("rollBtn");
-const info = document.getElementById("info");
+const playersInfo = document.getElementById("playersInfo");
+const diceImg = document.getElementById("diceImg");
+const board = document.getElementById("board");
 
 // выбор цвета
 document.querySelectorAll(".choice").forEach(c=>{
@@ -69,8 +105,8 @@ joinBtn.onclick = function(){
   myRoom = room;
 
   socket.emit("joinRoom", {
-    name: name,
-    room: room,
+    name,
+    room,
     color: selectedColor
   });
 
@@ -80,24 +116,95 @@ joinBtn.onclick = function(){
 
 // состояние
 socket.on("state", function(newState){
+
+  if(!state){
+    state = newState;
+    myId = socket.id;
+    render();
+    return;
+  }
+
+  const oldMe = state.players.find(p=>p.id===myId);
+  const newMe = newState.players.find(p=>p.id===myId);
+
   state = newState;
 
-  let html = "<h3>Игроки:</h3>";
+  if(oldMe && newMe && oldMe.position !== newMe.position){
+    animateMove(oldMe.position, newMe.position);
+  } else {
+    render();
+  }
 
+});
+
+// анимация движения
+function animateMove(from, to){
+
+  animating = true;
+  let current = from;
+
+  function step(){
+
+    if(current === to){
+      animating = false;
+      render();
+      return;
+    }
+
+    current = (current + 1) % 20;
+
+    const me = state.players.find(p=>p.id===myId);
+    me.position = current;
+
+    render();
+    setTimeout(step, 250);
+  }
+
+  step();
+}
+
+// отрисовка
+function render(){
+
+  board.innerHTML = "";
+
+  state.players.forEach(p=>{
+
+    const coord = CELL_COORDS[p.position];
+
+    const token = document.createElement("div");
+    token.className = "token";
+    token.style.background = p.color;
+    token.style.left = coord.left + "px";
+    token.style.top = coord.top + "px";
+
+    if(p.id === state.players[state.turn].id){
+      token.classList.add("active");
+    }
+
+    board.appendChild(token);
+  });
+
+  let html = "";
   state.players.forEach(p=>{
     html += "<div style='color:"+p.color+"'>" +
             p.name + " — " + p.hype + " хайп</div>";
   });
 
-  info.innerHTML = html;
-});
+  playersInfo.innerHTML = html;
+}
 
-// кубик
+// бросок кубика
 rollBtn.onclick = function(){
+  if(animating) return;
   socket.emit("rollDice", myRoom);
 };
 
-</script>
+// показать кубик
+socket.on("diceRolled", function(num){
+  diceImg.src = "dice" + num + ".png";
+});
 
+</script>
 </body>
 </html>
