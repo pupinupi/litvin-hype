@@ -1,60 +1,58 @@
 const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+
 const app = express();
-const http = require("http").createServer(app);
-const io = require("socket.io")(http);
+const server = http.createServer(app);
+const io = new Server(server);
 
 app.use(express.static("public"));
 
-let players = {};
+let rooms = {};
 
-io.on("connection", socket => {
+io.on("connection", (socket) => {
 
-  socket.on("joinGame", data => {
-    players[socket.id] = {
+  socket.on("joinRoom", ({ name, room, color }) => {
+
+    socket.join(room);
+
+    if (!rooms[room]) {
+      rooms[room] = { players: [], turn: 0 };
+    }
+
+    rooms[room].players.push({
       id: socket.id,
-      name: data.name,
-      color: data.color,
+      name,
+      color,
       position: 0,
-      hype: 0
-    };
+      hype: 0,
+      skip: false
+    });
 
-    socket.emit("init", players[socket.id]);
-    io.emit("updatePlayers", Object.values(players));
+    io.to(room).emit("state", rooms[room]);
   });
 
-  socket.on("rollDice", () => {
-    if (!players[socket.id]) return;
+  socket.on("rollDice", (room) => {
 
-    const dice = Math.floor(Math.random() * 6) + 1;
-    let player = players[socket.id];
+    const game = rooms[room];
+    if (!game) return;
 
-    player.position = (player.position + dice) % 20;
+    const player = game.players[game.turn];
+    if (!player || player.id !== socket.id) return;
 
-    applyCellEffect(player);
+    const roll = Math.floor(Math.random() * 6) + 1;
+    io.to(room).emit("roll", roll);
 
-    io.emit("diceResult", dice);
-    io.emit("updatePlayers", Object.values(players));
+    player.position = (player.position + roll) % 20;
+
+    game.turn = (game.turn + 1) % game.players.length;
+
+    io.to(room).emit("state", game);
   });
 
-  socket.on("disconnect", () => {
-    delete players[socket.id];
-    io.emit("updatePlayers", Object.values(players));
-  });
 });
 
-function applyCellEffect(player) {
-  const effects = [
-    0, 3, 2, "scandal", "risk",
-    2, "scandal", 3, 5, "reset",
-    "half", 3, "risk", 3, "skip",
-    2, "scandal", 8, "reset", 4
-  ];
-
-  let effect = effects[player.position];
-
-  if (typeof effect === "number") player.hype += effect;
-  if (effect === "reset") player.hype = 0;
-  if (effect === "half") player.hype = Math.floor(player.hype / 2);
-}
-
-http.listen(process.env.PORT || 3000);
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log("Server started on port " + PORT);
+});
