@@ -22,13 +22,18 @@
 </div>
 
 <div id="gameScreen" style="display:none;">
-  <div id="board">
-    <div id="diceArea">
-      <div id="dice">🎲</div>
-      <button id="rollBtn">Бросить</button>
-    </div>
+
+  <div id="boardWrapper">
+    <div id="board"></div>
   </div>
-  <div id="info"></div>
+
+  <div id="diceArea">
+    <div id="dice">🎲</div>
+    <button id="rollBtn">Бросить кубик</button>
+  </div>
+
+  <div id="info">Хайп: 0</div>
+
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -66,11 +71,49 @@ joinBtn.onclick = ()=>{
   gameScreen.style.display="block";
 };
 
+socket.on("init",data=>{
+  myId=data.id;
+});
+
+/*
+  ВАЖНО:
+  Координаты под твоё реальное поле
+  Движение: снизу вверх → вправо → вниз → влево
+*/
+
 const positions = [
-  {x:60,y:540},{x:60,y:480},{x:60,y:420},{x:60,y:360},{x:60,y:300},
-  {x:60,y:240},{x:60,y:180},{x:60,y:120},{x:60,y:60},{x:120,y:60},
-  {x:180,y:60},{x:240,y:60},{x:300,y:60},{x:360,y:60},{x:420,y:60},
-  {x:480,y:60},{x:540,y:60},{x:540,y:120},{x:540,y:180},{x:540,y:240}
+
+  // НИЖНИЙ ЛЕВЫЙ УГОЛ (СТАРТ)
+  {x:110,y:520}, // 0 START
+
+  // ЛЕВАЯ СТОРОНА ВВЕРХ
+  {x:110,y:450},
+  {x:110,y:380},
+  {x:110,y:310},
+  {x:110,y:240},
+
+  // ВЕРХ ЛЕВО → ПРАВО
+  {x:200,y:170},
+  {x:290,y:170},
+  {x:380,y:170},
+  {x:470,y:170},
+
+  // ПРАВАЯ СТОРОНА ВНИЗ
+  {x:560,y:240},
+  {x:560,y:310},
+  {x:560,y:380},
+  {x:560,y:450},
+
+  // НИЗ ПРАВО → ЛЕВО
+  {x:470,y:520},
+  {x:380,y:520},
+  {x:290,y:520},
+  {x:200,y:520},
+
+  // ДО ЗАМЫКАНИЯ
+  {x:150,y:520},
+  {x:130,y:520},
+  {x:110,y:520}
 ];
 
 function createToken(id,color){
@@ -86,10 +129,6 @@ function moveToken(id,pos){
   if(!el) return;
   el.style.transform=`translate(${positions[pos].x}px,${positions[pos].y}px)`;
 }
-
-socket.on("init",data=>{
-  myId=data.id;
-});
 
 socket.on("updatePlayers",players=>{
   players.forEach(p=>{
