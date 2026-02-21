@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Litvin Hype Ultimate</title>
+<title>Litvin Hype</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,19 +24,9 @@
 </div>
 
 <div id="gameScreen" style="display:none;">
-
-<div id="board">
-<img src="board.jpg" id="boardImg">
-<div id="tokens"></div>
-</div>
-
-<div id="diceSection">
-<div id="dice">⚀</div>
-<button id="rollBtn">Бросить</button>
-</div>
-
+<h3>Игра</h3>
 <div id="info"></div>
-
+<button id="rollBtn">Бросить кубик</button>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -44,38 +34,30 @@
 
 const socket = io();
 
-let state = null;
-let previousState = null;
 let selectedColor = null;
 let myRoom = null;
-let animating = false;
+let state = null;
 
-const startScreen = document.getElementById("startScreen");
-const gameScreen = document.getElementById("gameScreen");
-const joinBtn = document.getElementById("joinBtn");
-const rollBtn = document.getElementById("rollBtn");
 const nameInput = document.getElementById("nameInput");
 const roomInput = document.getElementById("roomInput");
-const infoBox = document.getElementById("info");
-
-const positions = [
-{ x:113,y:588},{ x:108,y:464},{ x:108,y:345},{ x:108,y:235},{ x:108,y:135},
-{ x:232,y:83},{ x:359,y:88},{ x:511,y:91},{ x:660,y:88},{ x:798,y:88},
-{ x:920,y:119},{ x:903,y:243},{ x:901,y:351},{ x:895,y:461},{ x:895,y:580},
-{ x:776,y:610},{ x:644,y:602},{ x:514,y:602},{ x:365,y:599},{ x:224,y:605}
-];
+const joinBtn = document.getElementById("joinBtn");
+const startScreen = document.getElementById("startScreen");
+const gameScreen = document.getElementById("gameScreen");
+const rollBtn = document.getElementById("rollBtn");
+const info = document.getElementById("info");
 
 // выбор цвета
 document.querySelectorAll(".choice").forEach(c=>{
-  c.onclick = ()=>{
+  c.onclick = function(){
     document.querySelectorAll(".choice").forEach(x=>x.classList.remove("sel"));
-    c.classList.add("sel");
-    selectedColor = c.dataset.color;
+    this.classList.add("sel");
+    selectedColor = this.getAttribute("data-color");
   };
 });
 
 // вход
-joinBtn.onclick = ()=>{
+joinBtn.onclick = function(){
+
   const name = nameInput.value.trim();
   const room = roomInput.value.trim();
 
@@ -86,7 +68,7 @@ joinBtn.onclick = ()=>{
 
   myRoom = room;
 
-  socket.emit("joinRoom",{
+  socket.emit("joinRoom", {
     name: name,
     room: room,
     color: selectedColor
@@ -96,134 +78,26 @@ joinBtn.onclick = ()=>{
   gameScreen.style.display = "block";
 };
 
-// кубик
-socket.on("state", newState => {
-
-  if(!state){
-    state = newState;
-    render();
-    return;
-  }
-
-  const currentPlayer = state.players[state.turn];
-  const updatedPlayer = newState.players.find(p => p.id === currentPlayer.id);
-
-  const oldPosition = currentPlayer.position;
-  const newPosition = updatedPlayer.position;
-
+// состояние
+socket.on("state", function(newState){
   state = newState;
-
-  if(oldPosition !== newPosition){
-    animateMove(oldPosition, newPosition, updatedPlayer.id);
-  } else {
-    render();
-  }
-
-});
-
-// обновление состояния
-socket.on("state", newState => {
-
-  if(!previousState){
-    previousState = JSON.parse(JSON.stringify(newState));
-    state = newState;
-    render();
-    return;
-  }
-
-  const moved = newState.players.find((p,i)=>
-    p.position !== previousState.players[i].position
-  );
-
-  state = newState;
-
-  if(moved){
-    animateMove(
-      previousState.players.find(p=>p.id===moved.id).position,
-      moved.position,
-      moved.id
-    );
-  } else {
-    render();
-  }
-
-  previousState = JSON.parse(JSON.stringify(newState));
-});
-
-function animateMove(from, to, playerId){
-
-  animating = true;
-
-  let current = from;
-
-  function step(){
-
-    if(current === to){
-      animating = false;
-      render();
-      return;
-    }
-
-    current = (current + 1) % 20;
-
-    const player = state.players.find(p=>p.id===playerId);
-    player.position = current;
-
-    render();
-
-    setTimeout(step, 250);
-  }
-
-  step();
-}
-
-    current = (current + 1) % 20;
-    state.players.find(p=>p.id===playerId).position = current;
-    render();
-
-    setTimeout(step, 250);
-  }
-
-  step();
-}
-
-function render(){
-
-  const layer = document.getElementById("tokens");
-  layer.innerHTML = "";
-
-  state.players.forEach(p=>{
-
-    const token = document.createElement("div");
-    token.className = "token";
-
-    if(p.id === state.players[state.turn].id){
-      token.classList.add("active");
-    }
-
-    token.style.background = p.color;
-    token.style.transform =
-      `translate(${positions[p.position].x}px,${positions[p.position].y}px)`;
-
-    layer.appendChild(token);
-  });
 
   let html = "<h3>Игроки:</h3>";
+
   state.players.forEach(p=>{
-    html += `<div><span style="color:${p.color}">${p.name}</span> — ${p.hype} хайп</div>`;
+    html += "<div style='color:"+p.color+"'>" +
+            p.name + " — " + p.hype + " хайп</div>";
   });
 
-  infoBox.innerHTML = html;
+  info.innerHTML = html;
+});
 
-  rollBtn.disabled =
-    animating ||
-    state.players[state.turn].id !== socket.id;
-}
-
-rollBtn.onclick = ()=>{
+// кубик
+rollBtn.onclick = function(){
   socket.emit("rollDice", myRoom);
 };
 
 </script>
+
 </body>
 </html>
