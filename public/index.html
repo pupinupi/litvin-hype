@@ -24,11 +24,22 @@
 
 <div id="game" style="display:none;">
 <div id="board">
+<img src="board.jpg" id="boardImg">
 <div id="tokens"></div>
+<div id="highlight"></div>
 </div>
 
-<div id="diceBox">
-<div id="dice">🎲</div>
+<div id="diceSection">
+<div id="dice3d">
+<div class="cube" id="cube">
+<div class="face front">1</div>
+<div class="face back">6</div>
+<div class="face right">3</div>
+<div class="face left">4</div>
+<div class="face top">2</div>
+<div class="face bottom">5</div>
+</div>
+</div>
 <button id="rollBtn">Бросить</button>
 </div>
 
@@ -44,6 +55,7 @@ const socket=io();
 let myRoom=null;
 let selectedColor=null;
 let state=null;
+let animating=false;
 
 const positions=[
 { x:113,y:588},{ x:108,y:464},{ x:108,y:345},{ x:108,y:235},{ x:108,y:135},
@@ -57,16 +69,14 @@ document.querySelectorAll(".choice").forEach(c=>{
   c.onclick=()=>{
     document.querySelectorAll(".choice").forEach(x=>x.classList.remove("sel"));
     c.classList.add("sel");
-    selectedColor=c.getAttribute("data-color"); // ← ИСПРАВЛЕНО
+    selectedColor=c.getAttribute("data-color");
   };
 });
 
-// вход
 join.onclick=()=>{
-  const nameVal=document.getElementById("name").value.trim();
-  const roomVal=document.getElementById("room").value.trim();
-
-  if(!nameVal || !roomVal || !selectedColor){
+  const nameVal=name.value.trim();
+  const roomVal=room.value.trim();
+  if(!nameVal||!roomVal||!selectedColor){
     alert("Заполните всё");
     return;
   }
@@ -79,17 +89,15 @@ join.onclick=()=>{
     color:selectedColor
   });
 
-  document.getElementById("start").style.display="none";
-  document.getElementById("game").style.display="block";
+  start.style.display="none";
+  game.style.display="block";
 };
 
-// обновление состояния
 socket.on("state",s=>{
   state=s;
   render();
 });
 
-// отображение игроков
 function render(){
 
   const layer=document.getElementById("tokens");
@@ -103,49 +111,108 @@ function render(){
     layer.appendChild(token);
   });
 
-  // 🔥 ВЫВОДИМ ХАЙП ВСЕХ ИГРОКОВ
-  let infoHTML = "<h3>Игроки:</h3>";
-
+  let html="<h3>Игроки:</h3>";
   state.players.forEach(p=>{
-    infoHTML += `
-      <div>
-        <span style="color:${p.color};font-weight:bold;">
-          ${p.name}
-        </span>
-        — ${p.hype} хайп
-      </div>
-    `;
+    html+=`<div><span style="color:${p.color}">${p.name}</span> — ${p.hype} хайп</div>`;
   });
 
   const current=state.players[state.turn];
+  html+=`<hr>Ходит: ${current.name}`;
 
-  infoHTML += `<hr>Ходит: ${current.name}`;
+  info.innerHTML=html;
 
-  document.getElementById("info").innerHTML = infoHTML;
-
-  rollBtn.disabled=(current.id!==socket.id);
+  rollBtn.disabled=(current.id!==socket.id)||animating;
 }
-// бросок
+
+// 🎲 3D кубик
+function rotateCube(num){
+  const cube=document.getElementById("cube");
+  const map={
+    1:"rotateX(0deg) rotateY(0deg)",
+    2:"rotateX(-90deg)",
+    3:"rotateY(-90deg)",
+    4:"rotateY(90deg)",
+    5:"rotateX(90deg)",
+    6:"rotateX(180deg)"
+  };
+  cube.style.transform=map[num];
+}
+
 rollBtn.onclick=()=>{
   socket.emit("rollDice",myRoom);
 };
 
-// кубик
 socket.on("roll",num=>{
-  document.getElementById("dice").innerHTML="🎲 "+num;
+  animating=true;
+  rotateCube(num);
 });
+
+// плавное движение
+socket.on("state",s=>{
+  if(!state){ state=s; render(); return; }
+
+  const old=state;
+  state=s;
+
+  const moving=state.players.find((p,i)=>
+    p.position!==old.players[i]?.position
+  );
+
+  if(moving){
+    animateMove(old.players.find(p=>p.id===moving.id)?.position||0,moving.position,moving.id);
+  } else {
+    render();
+  }
+});
+
+function animateMove(from,to,id){
+  animating=true;
+
+  let step=from;
+
+  function next(){
+    if(step===to){
+      animating=false;
+      highlightCell(to);
+      render();
+      return;
+    }
+    step=(step+1)%20;
+    state.players.find(p=>p.id===id).position=step;
+    render();
+    setTimeout(next,200);
+  }
+  next();
+}
+
+function highlightCell(pos){
+  const h=document.getElementById("highlight");
+  h.style.left=positions[pos].x+"px";
+  h.style.top=positions[pos].y+"px";
+  h.style.opacity=1;
+  setTimeout(()=>h.style.opacity=0,800);
+}
 
 // скандал
 socket.on("scandal",text=>{
-  const modal=document.getElementById("modal");
-  modal.innerHTML="<div class='box'>"+text+"<br><button onclick='modal.style.display=\"none\"'>OK</button></div>";
+  modal.innerHTML=`
+    <div class="modalBox">
+      <h2>СКАНДАЛ</h2>
+      <p>${text}</p>
+      <button onclick="modal.style.display='none'">Продолжить</button>
+    </div>
+  `;
   modal.style.display="flex";
 });
 
 // победа
 socket.on("winner",name=>{
-  const modal=document.getElementById("modal");
-  modal.innerHTML="<div class='box'>"+name+" победил! 🏆</div>";
+  modal.innerHTML=`
+    <div class="modalBox">
+      <h1>${name} победил! 🏆</h1>
+      <button onclick="location.reload()">Играть снова</button>
+    </div>
+  `;
   modal.style.display="flex";
 });
 
