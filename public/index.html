@@ -204,7 +204,17 @@ rollBtn.onclick = function(){
 socket.on("diceRolled", function(num){
   diceImg.src = "dice" + num + ".png";
 });
+// РЕЖИМ СЪЕМА КООРДИНАТ
+board.addEventListener("click", function(e){
 
+  const rect = board.getBoundingClientRect();
+
+  const x = Math.round(e.clientX - rect.left);
+  const y = Math.round(e.clientY - rect.top);
+
+  alert("X: " + x + " Y: " + y);
+
+});
 </script>
 </body>
 </html>
