@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Игра</title>
+<title>Литвин Игра</title>
 <link rel="stylesheet" href="style.css">
 </head>
 
@@ -15,7 +15,6 @@
   <input id="name" placeholder="Имя">
 
   <h3>Выбери фишку:</h3>
-
   <div id="emojiSelect">
     <span onclick="selectEmoji(this)">🚗</span>
     <span onclick="selectEmoji(this)">🔥</span>
@@ -23,27 +22,41 @@
     <span onclick="selectEmoji(this)">🚀</span>
   </div>
 
-  <button onclick="startGame()">Играть</button>
+  <button onclick="showRules()">Играть</button>
+</div>
+
+<!-- ПРАВИЛА -->
+<div id="rules" class="modal">
+  <div class="modalBox">
+    <h2>Правила</h2>
+    <p>Цель: набрать 70 хайпа</p>
+    <p>Бросай кубик и двигайся по клеткам</p>
+    <button onclick="startGame()">Начать</button>
+  </div>
 </div>
 
 <!-- ИГРА -->
 <div id="game" style="display:none;">
 
-  <h2 id="turn"></h2>
+<h2 id="turn"></h2>
 
-  <div id="boardWrapper">
-    <img src="board.jpg" id="board">
+<div id="boardWrapper">
+  <img src="board.jpg" id="board">
+  <div id="player" class="token">🚗</div>
+</div>
 
-    <div class="token" id="player">🚗</div>
-  </div>
+<button id="diceBtn" onclick="rollDice()">🎲 Бросить кубик</button>
 
-  <button onclick="rollDice()">🎲 Бросить кубик</button>
+<h3 id="hypeText">Хайп: 0 / 70</h3>
 
-  <div id="hypeBar">
-    <div id="hypeFill"></div>
-  </div>
+<div id="hypeBar">
+  <div id="hypeFill"></div>
+</div>
 
 </div>
+
+<!-- МОДАЛКИ -->
+<div id="eventModal" class="modal"></div>
 
 <script src="script.js"></script>
 </body>
