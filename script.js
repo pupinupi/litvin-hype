@@ -35,23 +35,33 @@ function selectEmoji(el){
 
 // Вход в комнату
 function joinRoom(){
-  name = document.getElementById("name").value;
-  roomCode = document.getElementById("room").value;
+  name = document.getElementById("name").value.trim();
+  roomCode = document.getElementById("room").value.trim();
   if(!name || !roomCode || !emoji) return alert("Заполни всё");
 
   const roomRef = db.collection("rooms").doc(roomCode);
-  
+
   roomRef.get().then(doc=>{
     if(!doc.exists){
-      roomRef.set({players:{}, turnIndex:0});
+      // Создаём комнату, если её нет
+      roomRef.set({players:{}, turnIndex:0}).then(() => {
+        addPlayer(roomRef);
+      });
+    } else {
+      addPlayer(roomRef);
     }
-    roomRef.update({
-      [`players.${playerId}`]:{name:name, emoji:emoji, pos:0, hype:0, skip:false}
-    });
+  }).catch(err => alert("Ошибка при получении комнаты: " + err.message));
+}
+
+// Добавление игрока
+function addPlayer(roomRef){
+  roomRef.update({
+    [`players.${playerId}`]: {name:name, emoji:emoji, pos:0, hype:0, skip:false}
+  }).then(() => {
     document.getElementById("lobby").style.display="none";
     document.getElementById("game").style.display="block";
     listenRoom(roomRef);
-  });
+  }).catch(err => alert("Ошибка добавления игрока: " + err.message));
 }
 
 // Слушаем изменения комнаты
