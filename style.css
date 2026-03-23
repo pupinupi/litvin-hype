@@ -1,28 +1,44 @@
 body {
+  margin: 0;
+  font-family: Arial;
   background: black;
   color: white;
   text-align: center;
-  font-family: Arial;
 }
 
-.top input {
-  padding: 10px;
-  font-size: 16px;
-  margin: 5px;
+/* ЛОББИ */
+#lobby {
+  margin-top: 100px;
+}
+
+#lobby input {
+  display: block;
+  margin: 10px auto;
+  padding: 15px;
+  font-size: 18px;
+  width: 250px;
+  border-radius: 10px;
 }
 
 button {
-  padding: 12px 20px;
-  font-size: 18px;
+  padding: 15px 25px;
+  font-size: 20px;
+  margin: 10px;
   border-radius: 10px;
   border: none;
-  background: orange;
+  background: linear-gradient(45deg, orange, red);
   color: white;
 }
 
-#game {
+.emojis {
+  font-size: 30px;
+  margin-top: 20px;
+}
+
+/* ИГРА */
+#boardWrapper {
   position: relative;
-  width: 300px;
+  width: 320px;
   margin: 20px auto;
 }
 
@@ -34,6 +50,22 @@ button {
 
 .token {
   position: absolute;
-  font-size: 22px;
+  font-size: 24px;
   transition: 0.3s;
+}
+
+/* ХАЙП */
+#hypeBar {
+  width: 80%;
+  height: 20px;
+  background: #333;
+  margin: 20px auto;
+  border-radius: 10px;
+}
+
+#hypeFill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #00ffcc, #00ff00);
+  border-radius: 10px;
 }
