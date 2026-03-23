@@ -1,11 +1,26 @@
-body{
-  background:#0d0d0d;
-  color:white;
-  text-align:center;
-  font-family:sans-serif;
+body {
+  font-size: 20px;
+  background: radial-gradient(circle, #111, #000);
+  color: white;
+  text-align: center;
 }
 
-.hidden{display:none;}
+button {
+  font-size: 22px;
+  padding: 15px 25px;
+  margin: 10px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(45deg, #ff8c00, #ff2e00);
+  color: white;
+}
+
+input {
+  font-size: 18px;
+  padding: 12px;
+  margin: 10px;
+  border-radius: 10px;
+}
 
 #board{
   width:420px;
