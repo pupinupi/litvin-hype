@@ -1,156 +1,109 @@
-let pos = 0;
+// Firebase config - вставь свои данные
+const firebaseConfig = {
+  apiKey: "API_KEY",
+  authDomain: "PROJECT_ID.firebaseapp.com",
+  projectId: "PROJECT_ID",
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let playerId = Date.now().toString();
+let name, roomCode, emoji;
+let players = {};
+let turnIndex = 0;
 let hype = 0;
-let skip = false;
-let emoji = "";
 
-/* клетки */
-const cells = [
-  "start","+3","+2","scandal","risk","+2","scandal","+3","+5",
-  "block","skip","+3","risk","+3","skip","+2","scandal","+8","block","+4"
-];
-
-/* координаты */
-const coords = [
- {x:20,y:260},{x:70,y:260},{x:120,y:260},{x:170,y:260},{x:220,y:260},{x:270,y:260},
- {x:270,y:210},{x:270,y:160},{x:270,y:110},{x:270,y:60},
- {x:220,y:60},{x:170,y:60},{x:120,y:60},{x:70,y:60},{x:20,y:60},
- {x:20,y:110},{x:20,y:160},{x:20,y:210},{x:70,y:210},{x:120,y:210}
-];
-
-/* выбор */
+// выбор фишки
 function selectEmoji(el){
- document.querySelectorAll("#emojiSelect span").forEach(e=>e.classList.remove("selected"));
- el.classList.add("selected");
- emoji = el.innerText;
+  document.querySelectorAll("#emojiSelect span").forEach(e=>e.classList.remove("selected"));
+  el.classList.add("selected");
+  emoji = el.innerText;
 }
 
-function showRules(){
- if(!emoji || !name.value) return alert("Заполни всё");
- document.getElementById("rules").style.display="flex";
+// Вход в комнату
+function joinRoom(){
+  name = document.getElementById("name").value;
+  roomCode = document.getElementById("room").value;
+  if(!name || !roomCode || !emoji) return alert("Заполни всё");
+  
+  const roomRef = db.collection("rooms").doc(roomCode);
+  
+  roomRef.get().then(doc=>{
+    if(!doc.exists){
+      roomRef.set({players:{}, turnIndex:0});
+    }
+    roomRef.update({
+      [`players.${playerId}`]:{name:name, emoji:emoji, pos:0, hype:0, skip:false}
+    });
+    lobby.style.display="none";
+    game.style.display="block";
+    listenRoom(roomRef);
+  });
 }
 
-function startGame(){
- lobby.style.display="none";
- rules.style.display="none";
- game.style.display="block";
-
- player.innerText = emoji;
- render();
+// слушаем изменения комнаты
+function listenRoom(roomRef){
+  roomRef.onSnapshot(doc=>{
+    const data = doc.data();
+    players = data.players;
+    turnIndex = data.turnIndex;
+    renderPlayers();
+    updateTurn();
+  });
 }
 
+// отображаем игроков
+function renderPlayers(){
+  playersDiv = document.getElementById("players");
+  playersDiv.innerHTML="";
+  Object.keys(players).forEach(id=>{
+    const p = players[id];
+    const el = document.createElement("div");
+    el.className="token";
+    el.innerText=p.emoji;
+    el.style.left=(p.pos*15)+"px"; // упрощенно, потом под координаты
+    el.style.top="50px";
+    playersDiv.appendChild(el);
+  });
+}
+
+// чей ход
+function updateTurn(){
+  const ids = Object.keys(players);
+  document.getElementById("turn").innerText = "Ход: "+players[ids[turnIndex]].name;
+  updateHypeDisplay();
+}
+
+function updateHypeDisplay(){
+  const ids = Object.keys(players);
+  let p = players[ids[turnIndex]];
+  document.getElementById("hypeText").innerText = `Хайп: ${p.hype} / 70`;
+  document.getElementById("hypeFill").style.width = (p.hype/70*100)+"%";
+}
+
+// бросок кубика
 function rollDice(){
- if(skip){
-  alert("Пропуск хода");
-  skip=false;
-  return;
- }
-
- let dice = Math.floor(Math.random()*6)+1;
- move(dice);
+  const ids = Object.keys(players);
+  if(ids[turnIndex]!=playerId) return alert("Не твой ход!");
+  
+  let dice = Math.floor(Math.random()*6)+1;
+  movePlayer(dice);
 }
 
-/* плавное движение */
-async function move(steps){
- for(let i=0;i<steps;i++){
-  pos++;
-  if(pos>=cells.length) pos=cells.length-1;
-  render();
-  await new Promise(r=>setTimeout(r,300));
- }
- applyCell();
-}
+// движение и применение клетки (пример)
+function movePlayer(steps){
+  const roomRef = db.collection("rooms").doc(roomCode);
+  let p = players[playerId];
+  let newPos = p.pos+steps;
+  if(newPos>19) newPos=19; // всего 20 клеток
+  let newHype = p.hype; // по клетке добавлять/убавлять хайп
+  
+  // пример: клетка +3
+  newHype += 3;
 
-/* логика клетки */
-function applyCell(){
- let c = cells[pos];
-
- if(c==="+3") addHype(3);
- if(c==="+2") addHype(2);
- if(c==="+4") addHype(4);
- if(c==="+5") addHype(5);
- if(c==="+8") addHype(8);
-
- if(c==="block") addHype(-10);
-
- if(c==="skip"){
-  addHype(-8);
-  skip=true;
- }
-
- if(c==="risk") showRisk();
- if(c==="scandal") showScandal();
-
- checkWin();
-}
-
-/* хайп */
-function addHype(val){
- hype += val;
- if(hype<0) hype=0;
-
- hypeFill.style.width = (hype/70*100)+"%";
- hypeText.innerText = "Хайп: "+hype+" / 70";
-
- document.body.style.boxShadow = val>0 ? "0 0 20px green" : "0 0 20px red";
- setTimeout(()=>document.body.style.boxShadow="none",300);
-}
-
-/* скандал */
-function showScandal(){
- let cards = [
- ["перегрел аудиторию🔥",-1],
- ["громкий заголовок🫣",-2],
- ["это монтаж 😱",-3],
- ["меня взломали #️⃣",-3],
- ["подписчики в шоке 😮",-4],
- ["удаляй пока не поздно🤫",-5],
- ["это контент🙄",-5]
- ];
-
- let c = cards[Math.floor(Math.random()*cards.length)];
-
- eventModal.innerHTML = `
- <div class="modalBox">
-   <h2 style="color:red;">СКАНДАЛ</h2>
-   <p>${c[0]}</p>
-   <button onclick="closeModal(${c[1]})">OK</button>
- </div>`;
- eventModal.style.display="flex";
-}
-
-/* риск */
-function showRisk(){
- eventModal.innerHTML = `
- <div class="modalBox">
-   <h2>Риск</h2>
-   <p>1-3: -5 хайп<br>4-6: +5 хайп</p>
-   <button onclick="riskRoll()">Бросить</button>
- </div>`;
- eventModal.style.display="flex";
-}
-
-function riskRoll(){
- let d = Math.floor(Math.random()*6)+1;
- let val = d<=3 ? -5 : 5;
- closeModal(val);
-}
-
-/* закрыть */
-function closeModal(val){
- eventModal.style.display="none";
- addHype(val);
-}
-
-/* победа */
-function checkWin(){
- if(hype>=70){
-  alert("ПОБЕДА!");
- }
-}
-
-/* отрисовка */
-function render(){
- let c = coords[pos];
- player.style.left = c.x+"px";
- player.style.top = c.y+"px";
+  roomRef.update({
+    [`players.${playerId}.pos`]:newPos,
+    [`players.${playerId}.hype`]:newHype,
+    turnIndex:(turnIndex+1)%Object.keys(players).length
+  });
 }
