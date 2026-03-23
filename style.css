@@ -69,3 +69,14 @@ button {
   background: linear-gradient(90deg, #00ffcc, #00ff00);
   border-radius: 10px;
 }
+
+#emojiSelect span {
+  font-size: 40px;
+  margin: 10px;
+  cursor: pointer;
+}
+
+#emojiSelect span.selected {
+  outline: 3px solid cyan;
+  border-radius: 10px;
+}
