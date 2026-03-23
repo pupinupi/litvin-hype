@@ -115,6 +115,21 @@ function renderPlayers(players){
   document.getElementById("players").innerHTML=text;
 }
 
+let currentPlayer = 0;
+
+function rollDice(playerId) {
+  if (playerId !== currentPlayer) {
+    alert("Не твой ход");
+    return;
+  }
+
+  let dice = Math.floor(Math.random() * 6) + 1;
+
+  movePlayer(playerId, dice);
+
+  currentPlayer = (currentPlayer + 1) % players.length;
+}
+
 // Ход игрока
 window.rollDice = async function(){
   let snap=await get(ref(db,"rooms/"+roomId));
