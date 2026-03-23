@@ -1,32 +1,41 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Игра</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Лобби</title>
+<link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<h1>🚗 Хайп Игра</h1>
+<h1>Лобби</h1>
 
-<div id="controls">
-  <input id="playerName" placeholder="Имя игрока">
-  <button onclick="addPlayer()">Добавить</button>
-  <button onclick="startGame()">Старт</button>
+<div class="top">
+  <input placeholder="Имя">
+  <input placeholder="Комната">
+  <button>Создать</button>
+  <button>Войти</button>
 </div>
 
-<div id="players"></div>
-
-<button id="rollBtn" onclick="rollDice()">🎲 Бросить кубик</button>
-
-<h2 id="turnText"></h2>
-
-<div id="board"></div>
-
-<div id="hypeBar">
-  <div id="hypeFill"></div>
+<div class="emojis">
+  🚗 🔥 💎 🚀
 </div>
+
+<div id="game">
+  <img src="board.jpg" id="board">
+
+  <!-- фишки -->
+  <div class="token" id="p0">🚗</div>
+  <div class="token" id="p1">🔥</div>
+  <div class="token" id="p2">💎</div>
+  <div class="token" id="p3">🚀</div>
+</div>
+
+<button onclick="rollDice()">🎲 Бросить кубик</button>
+
+<p id="info"></p>
 
 <script src="script.js"></script>
+
 </body>
 </html>
