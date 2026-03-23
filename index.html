@@ -13,16 +13,17 @@
   <h1>🔥 Лобби</h1>
 
   <input id="name" placeholder="Имя">
-  <input id="room" placeholder="Комната">
 
-  <div>
-    <button onclick="startGame()">Создать</button>
-    <button onclick="startGame()">Войти</button>
+  <h3>Выбери фишку:</h3>
+
+  <div id="emojiSelect">
+    <span onclick="selectEmoji(this)">🚗</span>
+    <span onclick="selectEmoji(this)">🔥</span>
+    <span onclick="selectEmoji(this)">💎</span>
+    <span onclick="selectEmoji(this)">🚀</span>
   </div>
 
-  <div class="emojis">
-    🚗 🔥 💎 🚀
-  </div>
+  <button onclick="startGame()">Играть</button>
 </div>
 
 <!-- ИГРА -->
@@ -33,10 +34,7 @@
   <div id="boardWrapper">
     <img src="board.jpg" id="board">
 
-    <div class="token" id="p0">🚗</div>
-    <div class="token" id="p1">🔥</div>
-    <div class="token" id="p2">💎</div>
-    <div class="token" id="p3">🚀</div>
+    <div class="token" id="player">🚗</div>
   </div>
 
   <button onclick="rollDice()">🎲 Бросить кубик</button>
