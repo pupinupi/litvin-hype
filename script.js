@@ -1,100 +1,38 @@
-let players = [];
-let currentPlayer = 0;
-let gameStarted = false;
+let positions = [0, 0, 0, 0];
+let current = 0;
 
-const emojis = ["🚗", "🔥", "💎", "🚀"];
+// координаты клеток (пример, под твоё поле)
+const cells = [
+  {x:20,y:250},{x:80,y:250},{x:140,y:250},{x:200,y:250},{x:260,y:250},
+  {x:260,y:200},{x:260,y:150},{x:260,y:100},{x:260,y:50},
+  {x:200,y:50},{x:140,y:50},{x:80,y:50},{x:20,y:50},
+  {x:20,y:100},{x:20,y:150},{x:20,y:200}
+];
 
-function addPlayer() {
-  const name = document.getElementById("playerName").value;
-  if (!name) return;
+function render() {
+  positions.forEach((pos, i) => {
+    const el = document.getElementById("p"+i);
+    const cell = cells[pos];
 
-  players.push({
-    name,
-    position: 0,
-    emoji: emojis[players.length % emojis.length],
-    hype: 0
-  });
-
-  renderPlayers();
-}
-
-function renderPlayers() {
-  const div = document.getElementById("players");
-  div.innerHTML = "";
-
-  players.forEach(p => {
-    div.innerHTML += `<div>${p.emoji} ${p.name}</div>`;
-  });
-}
-
-function startGame() {
-  if (players.length === 0) return;
-
-  gameStarted = true;
-  createBoard();
-  updateTurn();
-}
-
-function createBoard() {
-  const board = document.getElementById("board");
-  board.innerHTML = "";
-
-  for (let i = 0; i < 25; i++) {
-    const cell = document.createElement("div");
-    cell.className = "cell";
-    cell.id = "cell-" + i;
-    board.appendChild(cell);
-  }
-
-  renderTokens();
-}
-
-function renderTokens() {
-  players.forEach((p, index) => {
-    const cell = document.getElementById("cell-" + p.position);
-
-    const token = document.createElement("div");
-    token.className = "player";
-    token.innerText = p.emoji;
-
-    token.style.left = (index * 10) + "px";
-    token.style.top = (index * 10) + "px";
-
-    cell.appendChild(token);
+    el.style.left = (cell.x + i*8) + "px";
+    el.style.top = (cell.y + i*8) + "px";
   });
 }
 
 function rollDice() {
-  if (!gameStarted) return;
+  let dice = Math.floor(Math.random()*6)+1;
 
-  const dice = Math.floor(Math.random() * 6) + 1;
-  const player = players[currentPlayer];
-
-  player.position += dice;
-  if (player.position >= 24) player.position = 24;
-
-  player.hype += dice * 5;
-
-  updateHype(player.hype);
-
-  clearBoard();
-  renderTokens();
-
-  currentPlayer = (currentPlayer + 1) % players.length;
-  updateTurn();
-}
-
-function clearBoard() {
-  for (let i = 0; i < 25; i++) {
-    document.getElementById("cell-" + i).innerHTML = "";
+  positions[current] += dice;
+  if (positions[current] >= cells.length) {
+    positions[current] = cells.length - 1;
   }
+
+  document.getElementById("info").innerText =
+    "Игрок " + (current+1) + " выбросил " + dice;
+
+  current = (current + 1) % 4;
+
+  render();
 }
 
-function updateTurn() {
-  document.getElementById("turnText").innerText =
-    "Ход: " + players[currentPlayer].name;
-}
-
-function updateHype(value) {
-  document.getElementById("hypeFill").style.width = value + "%";
-}
+render();
